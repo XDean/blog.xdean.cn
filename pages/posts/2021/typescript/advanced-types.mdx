@@ -1,0 +1,384 @@
+import ts from './ts.webp'
+import {postMeta} from "../../../../src/domain";
+
+export const meta = postMeta({
+  title: 'Typescript 高级类型',
+  date: '2021-06-19',
+  image: ts,
+  tags: ['Typescript'],
+  categories: ['Coding'],
+})
+
+# Typescript 高级类型
+
+自2012年诞生至今已有10个年头，Typescript已然成为Javascript项目的标配。
+Typescript的类型系统是笔者学过的几门语言中表现力最强的，同时也兼顾了可读性易用性。
+
+本文将介绍Typescript的类型系统的各种(高级)用法，帮助你在需要时定义更贴合业务的强大类型。
+
+## 类型基础
+
+关于基础知识，在这里不做赘述，如有需要请自行阅读[官方文档][1]。主要包括
+
+- 基本类型：`string`, `number`, `boolean`
+- 数组类型：`T[]`, `Array<T>`
+- 元组类型：`[number, number]`
+- 对象类型：`{id: number, title?: string}`
+- 函数类型：`() => void`
+- 通用类型： `any`, `null`, `undefined`, `void`, `never`
+- 联合(交叉)类型：`string | number`, `Foo & Bar`
+- 泛型
+
+## 接口和类型别名
+
+我们可以通过`type`关键字来定义类型别名，这可以简化我们的类型注解，不需要在每一处写冗长的类型。
+
+```typescript
+type Point = {
+    x: number
+    y: number
+}
+
+type ID = string | number
+```
+
+注意，类型别名仅仅只是别名，这与一些其他语言(如Go)不同。
+类型别名在使用上和原类型完全等价，不需要额外的类型转换。
+
+对于对象类型，另一种声明方式是interface接口。如
+
+```typescript
+interface Point {
+    x: number
+    y: number
+}
+```
+
+type声明和interface声明在绝大部分情况下没有区别，你可以根据个人喜好使用(笔者比较喜欢type)。
+唯一的区别是interface可以合并声明，详情可以参看[官方文档][2]。
+
+## keyof / typeof
+
+`keyof`运算符用于提取类型的键。例如
+
+```typescript
+type Point = { x: number; y: number };
+type P = keyof Point; // P = 'x' | 'y'
+```
+
+`typeof`运算符用于获取值的类型。例如
+
+```typescript
+const P = {x: 1, y: 1}
+type Point = typeof P
+
+function f() { return [1, 2] }
+type F = {
+  getSize: typeof f
+}
+```
+
+这两个运算符会在我们后面学习的其他高级类型中频繁用到。
+
+## 字面量类型
+
+在Typescript中，三大基本类型的值也可以作为类型使用。
+
+```typescript
+type TaskStatus = 'idle' | 'running' | 'error'
+type Check = true | false | 'partial'
+type Score = 0 | 1 | 2 | 3 | 4 | 5
+```
+
+### 模板字符串类型 (v4.1)
+
+在4.1版本，Typescript还添加了模板字符串类型的支持。例如：
+
+```typescript
+type World = "world";
+type Greeting = `hello ${World}`;
+```
+
+这种定义的好处是可以减少大量的冗余工作。
+例如下面的例子我们不需要再为`Alignment`重复定义9个字面量类型
+
+```typescript
+type VerticalAlignment = "top" | "middle" | "bottom";
+type HorizontalAlignment = "left" | "center" | "right";
+type Alignment = `${VerticalAlignment}-${HorizontalAlignment}`
+```
+
+另一方可以进一步提高类型表现力，得到更加动态智能的类型上下文。
+例如下面的例子，监听函数的事件类型会基于`source`的键，同时回调函数的参数类型会根据监听的属性而改变
+
+```typescript
+type PropEventSource<T> = {
+    on<K extends string & keyof T>
+        (eventName: `${K}Changed`, callback: (newValue: T[K]) => void ): void;
+};
+
+declare function makeWatchedObject<T>(obj: T): T & PropEventSource<T>;
+
+let person = makeWatchedObject({
+    firstName: "Homer",
+    age: 42,
+    location: "Springfield",
+});
+
+// works! 'newName' is typed as 'string'
+person.on("firstNameChanged", newName => {
+    // 'newName' has the type of 'firstName'
+    console.log(`new name is ${newName.toUpperCase()}`);
+});
+
+// works! 'newAge' is typed as 'number'
+person.on("ageChanged", newAge => {
+    if (newAge < 0) {
+        console.log("warning! negative age");
+    }
+})
+```
+
+## 类型索引
+
+对于对象类型，我们可以直接通过索引来访问元素类型。(数组/元组其实就是索引为整数的对象)
+
+```typescript
+type Person = { age: number; name: string; alive: boolean };
+type Age = Person["age"];
+type AgeOrName = Person["age" | "name"];
+
+type ValueOf<T> = T[keyof T];
+
+const myRect = {
+    leftTop: {x:1, y:1},
+    rightBottom: {x:10, y:10}
+}
+type Rect = typeof myRect
+type Point = Rect[keyof Rect]
+type Value = Point['x']
+```
+
+## 映射类型
+
+在定义类型时，对于不定形式的键值，可以使用映射类型。例如
+
+```typescript
+type Dict = {
+    [key: string]: any
+}
+```
+
+键值必须是string或者number类型。
+
+另一种形式是可以定义键值为迭代器，即`in xxx`，一般结合泛型使用。例如下面的例子将给定类型的值全都包成Promise：
+
+```typescript
+type Promised<T> = {
+  [K in keyof T]: Promise<T[K]>
+}
+```
+
+### 映射修饰符
+
+在映射时，我们还可以给新的属性增减修饰符，即`readonly`和`?`。例如
+
+```typescript
+type Readonly<T> = { readonly [K in keyof T]: T[K] }
+type Writable<T> = { -readonly [K in keyof T]: T[K] }
+type Optional<T> = { [K in keyof T]?: T[K] }
+type NoOptional<T> = { [K in keyof T]-?: T[K] }
+```
+
+### `as`重映射 (v4.1)
+
+4.1版本中添加了类型重映射功能，可以在映射类型对键进行变换。
+例如下面的例子展示了从泛型T得到访问类型`Accessor<T>`，其包含了所有的getter, setter方法。
+
+```typescript
+type Getter<T> = { [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K] };
+type Setter<T> = { [K in keyof T as `set${Capitalize<string & K>}`]: (v: T[K]) => void }
+type Accessor<T> = Getter<T> & Setter<T>
+type PointAccessor = Accessor<Point>
+// PointAccessor == {
+//     getX():number, setX(v: number):void,
+//     getY():number, setY(v: number):void,
+// }
+```
+
+又例如下面的例子将类型中的`id`键移除。
+
+```typescript
+type WithoutId<T> = {
+  [K in keyof T as Exclude<K, "id">]: T[K]
+};
+```
+
+_其中用到的`Capitalize`和`Exclude`会在后面的工具类型一节中学习到_
+
+## 条件类型
+
+类型可以通过三目运算符进行判断，从而实现动态推断类型。
+例如下面的`Flatten`可以将嵌套数组“压扁”，而对于其他类型不做处理。
+
+```typescript
+type Flatten<T> = T extends any[][] ? T[number] : T;
+// Flatten<number[][]> = number[]
+// Flatten<number> = number
+```
+
+又例如，在`as`重映射一节我们定义了`Getter<T>`类型，但是它会把所有方法也变换成getter方法。
+利用条件类型，我们可以把函数成员保持原状。
+
+```typescript
+type OnlyFunction<T> = { [K in keyof T as (T[K] extends Function ? K : never)]: T[K] };
+type NoFunction<T> = { [K in keyof T as (T[K] extends Function ? never : K)]: T[K] };
+
+type Getter<T> = { [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K] };
+type BetterGetter<T> = OnlyFunction<T> & Getter<NoFunction<T>>
+```
+
+### 类型推断 infer
+
+现在既然我们可以判断类型，自然也就想要得到推断的类型。这就需要用到`infer`关键字。
+
+下面的例子展示了如何使用`infer`来获取函数的返回值类型
+
+```typescript
+type ReturnType<T extends Function> = T extends (...args: any) => infer R ? R : never
+```
+
+### 联合类型分配律
+
+在对联合类型进行条件判断后，其类型先分配后联合，而非直接联合。
+如果要阻止这一行为，可以把先转换成元组类型，即用方括号包起来。
+例如
+
+```typescript
+type Array1<T> = T[];
+type Array2<T> = T extends any ? T[] : never;
+type Array3<T> = [T] extends any ? T[] : never;
+// Array1<string | number> = (string | number)[]
+// Array2<string | number> = string[] | number[]
+// Array3<string | number> = (string | number)[]
+```
+
+### 递归类型 (v4.1)
+
+条件类型可以进行递归引用，从而实现某些递归逻辑。
+
+例如，对于前面出现过的`Flatten`类型，利用递归类型可以获得真正的扁平数组
+
+```typescript
+type Flatten<T> = T extends (infer E)[] ? (E extends any[] ? Flatten<E> : E[]) : T;
+// Flatten<number[][][][]> => number[]
+```
+
+## 内置工具类型
+
+Typescript提供了一系列工具类型，方便我们日常使用而不需要自己去单独定义。
+
+```typescript
+// 所有属性可选
+type Partial<T> = { [P in keyof T]?: T[P] }
+
+// 所有属性必须存在
+type Required<T> = { [P in keyof T]-?: T[P] }
+
+// 所有属性只读
+type Readonly<T> { readonly [P in keyof T]: T[P] }
+
+// 规定key的范围，所有属性有相同的类型
+type Record<K extends keyof any, T> = { [P in K]: T }
+
+// 从T类型中排除U类型，相当于差集
+type Exclude<T, U> = T extends U ? never : T
+
+// 从T类型中提取U类型，相当于交集
+type Extract<T, U> = T extends U ? never : T
+
+// 从T中保留给定的key
+type Pick<T, K extends keyof T> = { [P in K]: T[P] }
+
+// 从T中排除给定的key
+type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>
+
+// 从T中排除空类型
+type NonNullable<T> = T extends null | undefined ? never : T;
+
+// 获取函数的参数类型数组
+type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P : never;
+
+// 获取函数的返回值类型
+type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : any;
+
+// 字符串操作类型
+type Uppercase<S extends string> = intrinsic;
+type Lowercase<S extends string> = intrinsic;
+type Capitalize<S extends string> = intrinsic;
+type Uncapitalize<S extends string> = intrinsic;
+```
+
+亦可参考[官方文档][3]
+
+## 例题
+
+练习1：Getter
+
+- 构造一个类型`Getter<T>`，其包含`T`所有属性的Getter方法
+- 对于`T`中的每一个**非函数**成员`abc`，`Getter<T>`有对应的`getter`方法(即一个无参数方法，返回类型为abc的类型)
+- 如果其类型为`boolean`，则方法名为`isAbc`
+- 如果其类型不为`boolean`，则方法名为`getAbc`
+
+示例：
+
+```typescript
+Getter<{
+    id: number,
+    valid: boolean,
+    run(): void
+}>
+
+=>
+
+{
+    getId(): number
+    isValid(): booean
+}
+```
+
+练习2：PropertyName
+
+- 构造一个类型`PropertyName<T>`，其联合`T`的所有属性的名字
+- 对于`T`中的每个**函数**成员
+- 如果其是一个Getter方法(定义参考上一个练习)，获得属性的名字
+- 如果不是，舍弃
+- 对于`T`中的非函数成员，获得其名字
+
+示例：
+
+```typescript
+PropertyName<{
+    id: number,
+    valid: boolean,
+    getName(): string,
+    isLocked(): boolean,
+    issue(): void
+}>
+
+=>
+
+'id' | 'valid' | 'name' | 'locked'
+```
+
+## 其他工具
+
+1. [DefinitelyTyped][4]，TS开源社区类型库，包含7000+开源JS库的类型定义
+2. [type-fest][5]，TS实用类型库，作为对内置工具类型的补充
+
+[1]:  https://www.typescriptlang.org/docs/handbook/2/basic-types.html
+[2]:  https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces
+[3]:  https://www.typescriptlang.org/docs/handbook/utility-types.html
+[4]:  https://github.com/DefinitelyTyped/DefinitelyTyped
+[5]:  https://github.com/sindresorhus/type-fest
+[lc]:  https://github.com/LeetCode-OpenSource/hire/blob/master/typescript_zh.md

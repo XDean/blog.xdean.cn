@@ -1,0 +1,290 @@
+import {PostMeta} from 'src/domain'
+import pwa from './pwa.svg'
+
+export const meta: PostMeta = {
+  date: '2021-05-10',
+  image: pwa,
+  tags: ['PWA', 'Web'],
+  categories: ['Coding'],
+}
+
+# Progressive Web Apps 渐进式网页应用入门
+
+## PWA简介
+
+渐进式网页应用(简称PWA)是一种Web应用标准。
+通过使用一系列新兴技术让你的Web应用**快速，安全，可安装，可离线使用，可适配各种设备**，使其拥有不亚于原生应用的使用体验。
+主要技术包括`App Manifest`, `Service Worker`, `Web Push`等
+
+PWA最早由Google于2015年发起，同年Chrome支持`Service Worker`。
+之后，Safari和Edge也相继在2018年和2019年提供支持。
+
+## 为什么需要PWA
+
+随着十多年来智能手机的发展和普及，人们访问互联网的方式已经改变，移动互联网的使用率已超过传统互联网。
+数据显示，终端用户有87%的时间花费在手机应用上，相对的，网页只占到不足二成。
+
+![compare-time](./compare-time.png)
+
+手机原生应用固然好用，但是也天生带有缺陷：
+
+- 不同平台需要多次实现，例如Android和IOS
+- 内容封闭，无法被搜索引擎检索到
+- 应用分发成本高，用户需要下载几十上百MB的安装包
+
+而这些缺点正是Web应用的优点，可以说Web就是为此而生。
+但是，Web也有自己的缺点
+
+- 加载速度慢
+- 离线无法使用
+- 没有快捷入口
+- 没有消息推送
+
+这些缺点使得Web虽然便捷好用，但是用户体验始终不如原生应用，用户粘性差。
+
+![compare-visitor](./compare-visitor.png)
+
+![faster](./faster.png)
+
+面对Native和Web
+
+- 很多公司为了兼顾两者的优缺点，不得不Android+IOS+Web三路并进，成本骤升3倍 (例如知乎)
+- 还有一些公司，为了减少成本，获得灵活性，在原生应用中嵌入Web页面，又给用户体验带来了巨大的落差 (例如饿了么)
+
+那么如果我们能够克服Web的这些缺点，是否就可以获得媲美原生应用的体验了呢？
+
+答案当然就是PWA。PWA使得Web应用更受用户喜爱。
+一个直观的例子时，在推出PWA应用后：
+
+- Twitter，会话页面数+65%，推文数+75%，跳出率-20%，应用程序大小-97%
+- Nikkei，流量+230%，订阅量+58%，活跃用户+59%
+- Hulu，访问量+27%
+
+## PWA Checklist
+
+PWA通过一系列指导意见帮助我们设计Web应用，并提供相应的技术支持。
+
+以下两个清单分别为Core和Optimal
+
+- 如果满足了Core List，则你的应用可以称之为PWA。
+- 如果同时还满足了Optimal List，那么恭喜你创建了一个一流的PWA。
+
+### Core
+
+- **快速** 速度是至关重要的指标，与用户粘性息息相关。其中尤为重要的是首屏显示速度。
+- **响应式布局** 用户可以在任意尺寸的屏幕上进行访问。
+- **可离线响应** 在离线状态下，显示应用页面而非浏览器的空白页。
+- **可安装** 可以将应用安装到本地环境。这将使得用户可以更加便捷地与应用互动。
+
+### Optimal
+
+- **可离线使用** 在离线状态下，对于非网络相关的功能，依然能够正常使用。
+- **可通过搜索发现** 应用内容可以被搜索引擎发现并正确索引。
+- **适配任何输入设备** 主要包括鼠标，键盘和触摸屏。
+- **需要时请求权限** 当需要使用额外权限时，询问用户。(例如GPS，通知)
+- **完全可访问** 满足[WCAG 2.0](https://www.w3.org/TR/WCAG20/)可访问性要求
+
+## PWA技术
+
+PWA是一种标准而不是不是一项技术，但是一些PWA标准技术可以帮助我们快速构建一个PWA应用。
+
+### Web Manifest
+
+[Web Manifest](https://developer.mozilla.org/en-US/docs/Web/Manifest)是一个JSON文件，它提供了应用的安装信息，使得应用可以被安装到本地。
+
+要使用Manifest只需要添加链接标记到HTML head:
+
+```html
+<head>
+<link rel="manifest" href="/manifest.json">
+</head>
+```
+
+一个典型的Manifest文件如下:
+
+```json
+{
+  "name": "HackerWeb",
+  "short_name": "HackerWeb",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "A simply readable Hacker News app.",
+  "icons": [
+    {
+      "src": "images/touch/homescreen48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    }, {
+      "src": "images/touch/homescreen192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today's agenda",
+      "url": "/today",
+      "description": "List of events planned for today"
+    },
+  ]
+}
+```
+
+### Service Worker
+
+[Service Worker](https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API)
+是一个充当Web应用和网络之间的代理服务器的JS脚本。
+其拦截网络请求并根据网络是否可用来采取适当的动作，读取缓存或是请求服务器，这使得应用可以离线使用。
+
+要使用Service Worker，你需要将你的脚本进行注册。
+注册成功后Service Worker会运行在Web Worker中，所以没有DOM访问权限。
+
+```javascript
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw-test/sw.js', { scope: '/sw-test/' }).then(function(reg) {
+    // registration worked
+    console.log('Registration succeeded. Scope is ' + reg.scope);
+  }).catch(function(error) {
+    // registration failed
+    console.log('Registration failed with ' + error);
+  });
+}
+```
+
+在`sw.js`脚本中，我们可以监听`install`事件来加载缓存:
+
+```javascript
+this.addEventListener('install', function(event) {
+  event.waitUntil(
+    caches.open('v1').then(function(cache) {
+      return cache.addAll([
+        '/sw-test/index.html',
+        '/sw-test/style.css',
+        '/sw-test/app.js',
+        '/sw-test/star-wars-logo.jpg',
+      ]);
+    })
+  );
+});
+```
+
+另一方面，我们还要监听`fetch`事件来拦截网络请求，并尝试命中缓存:
+
+```javascript
+self.addEventListener('fetch', function(event) {
+  event.respondWith(
+    caches.match(event.request).then(function(resp) {
+      return resp || fetch(event.request).then(function(response) {
+        return caches.open('v1').then(function(cache) {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      });
+    })
+  );
+});
+```
+
+现在，你的应用会在打开时自动安装Service Worker并下载预定义的缓存项，并且会拦截网络请求尝试使用缓存项。
+
+### WorkBox
+
+虽然有了Service Worker，我们已经可以控制离线缓存。
+但是使用起来有些繁琐，回看刚刚的例子，一个简单的缓存逻辑需要写多行代码，而现实应用中的缓存逻辑显然要复杂很多。
+为此，Google推出[WorkBox库](https://developers.google.com/web/tools/workbox)，可以帮助我们简单快速地管理缓存。
+
+例如，对于JS和CSS这类更新不敏感的内容，可以命中并刷新
+
+```javascript
+registerRoute(
+  ({request}) => request.destination === 'script' ||
+                 request.destination === 'style',
+  new StaleWhileRevalidate()
+);
+```
+
+对于图片资源，可以总是命中缓存，但是设置缓存期限，以减少存储消耗
+
+```javascript
+registerRoute(
+  ({request}) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'images',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+      new ExpirationPlugin({
+        maxEntries: 60,
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+      }),
+    ],
+  }),
+);
+```
+
+在离线时，返回默认的离线页面而不是浏览器错误页：
+
+```javascript
+setCatchHandler(async ({ event }) => {
+  if (event.request.destination === 'document') {
+    return matchPrecache('/offline.html');
+  }
+  return Response.error();
+});
+```
+
+如果你使用webpack，还可以自动生成`sw.js`:
+
+```javascript
+// webpack.config.js
+module.exports = {
+  plugins: [
+    new GenerateSW()
+  ]
+};
+```
+
+当然，WorkBox的能力远不止这些，更多内容可参看官方文档。
+
+## 例子
+
+说了这么多，想必你已经对PWA有了一定的认识。
+下面给出一些示例网站，你可以打开并尝试安装到本地。
+
+- [Squoosh](https://squoosh.app/)，Google开源，使用WebAssembly的图片压缩工具，可离线使用
+- [国标算番](https://xdean.cn/tools/guobiao)，笔者做的小工具，可离线使用
+- [星巴克](https://app.starbucks.com/)
+- [Printeret](https://www.pinterest.com/)
+
+### 安装方法
+
+**桌面浏览器 (Chrome/Edge)**
+
+点击地址栏右侧的安装图标
+
+![desktop-install](./chrome-desktop-install.png)
+
+**手机Chrome**
+
+选择`菜单 => 添加到主屏幕`
+
+![mobile-install](./chrome-mobile-install.jpeg)
+
+## 后记
+
+在我成文的一周后，微信团队宣布自2021年5月19日起停止小程序打开App的技术服务。
+
+如今许多应用在网页端都会或强制或提示跳转到APP继续，甚至还有许多应用压根就没有网页端。
+然而微信又用一个套壳网页把各家应用锁在了微信里。
+再回想桌面端Web应用和原生应用的较量，不得不叹息这历史的倒车，亦或感叹历史是个圆圈圈。
+
+这个问题有解吗？我不知道PWA能不能算一个解，但我希望能有解，能重见开放包容的互联网。
+
+## Reference
+
+- https://developers.google.com/web/ilt/pwa/why-build-pwa
+- https://web.dev/what-are-pwas/
+- https://web.dev/pwa-checklist/
+- https://developer.mozilla.org/zh-CN/docs/Web/Progressive_web_apps

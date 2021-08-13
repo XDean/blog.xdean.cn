@@ -1,0 +1,15 @@
+@import "~github-markdown-css/github-markdown.css";
+@import "~prismjs/themes/prism-okaidia.css";
+@import "~katex/dist/katex.min.css";
+
+.markdown-body ol {
+    @apply list-decimal;
+}
+
+.markdown-body ul {
+    @apply list-disc;
+}
+
+.markdown-body pre {
+    @apply max-w-full lg:max-w-[80%];
+}
