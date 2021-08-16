@@ -1,12 +1,18 @@
-import {PostMeta} from 'src/domain'
+import {postMeta} from "../../../../src/domain";
+import Image from 'next/image'
+import compareTime from './compare-time.png'
+import chromeDesktopInstall from './chrome-desktop-install.png'
+import chromeMobileInstall from './chrome-mobile-install.jpeg'
+import compareVisitor from './compare-visitor.png'
+import faster from './faster.png'
 import pwa from './pwa.svg'
 
-export const meta: PostMeta = {
+export const meta = postMeta({
   date: '2021-05-10',
   image: pwa,
   tags: ['PWA', 'Web'],
   categories: ['Coding'],
-}
+})
 
 # Progressive Web Apps 渐进式网页应用入门
 
@@ -24,7 +30,7 @@ PWA最早由Google于2015年发起，同年Chrome支持`Service Worker`。
 随着十多年来智能手机的发展和普及，人们访问互联网的方式已经改变，移动互联网的使用率已超过传统互联网。
 数据显示，终端用户有87%的时间花费在手机应用上，相对的，网页只占到不足二成。
 
-![compare-time](./compare-time.png)
+<Image src={compareTime}/>
 
 手机原生应用固然好用，但是也天生带有缺陷：
 
@@ -42,9 +48,8 @@ PWA最早由Google于2015年发起，同年Chrome支持`Service Worker`。
 
 这些缺点使得Web虽然便捷好用，但是用户体验始终不如原生应用，用户粘性差。
 
-![compare-visitor](./compare-visitor.png)
-
-![faster](./faster.png)
+<Image src={compareVisitor}/>
+<Image src={faster}/>
 
 面对Native和Web
 
@@ -264,13 +269,13 @@ module.exports = {
 
 点击地址栏右侧的安装图标
 
-![desktop-install](./chrome-desktop-install.png)
+<Image src={chromeDesktopInstall}/>
 
 **手机Chrome**
 
 选择`菜单 => 添加到主屏幕`
 
-![mobile-install](./chrome-mobile-install.jpeg)
+<Image src={chromeMobileInstall}/>
 
 ## 后记
 
