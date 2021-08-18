@@ -3,7 +3,7 @@ import {PostMeta, PostMetaNormalize} from "./domain";
 import {walk} from "../common/util/fs";
 import {toArray} from "../common/util/array";
 
-const postsDirectory = path.join(process.cwd(), "posts")
+const postsDirectory = path.join(process.cwd(), "pages/posts")
 
 export async function getAllPostFilePaths() {
   const paths = await toArray(walk(postsDirectory, {
@@ -17,7 +17,6 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMetaNorma
   const meta = module.meta as PostMeta
   return {
     ...meta,
-    module: `posts/${path}`,
     path: path,
     link: fileToUrl(path),
   }
@@ -38,7 +37,6 @@ export async function getPostMetaByUrlPath(path: string): Promise<PostMetaNormal
 export async function getAllPostMetas() {
   const slugs = await getAllPostFilePaths()
   const metas = await Promise.all(slugs.map(slug => getPostMetaByFilePath(slug)))
-  metas.sort()
   return metas
 }
 
@@ -59,7 +57,7 @@ function urlToFile(p: string) {
   if (p.endsWith('/')) {
     p = p + 'index'
   }
-  res.push(p + '.md')
   res.push(p + '.mdx')
+  res.push(p + '.md')
   return res
 }

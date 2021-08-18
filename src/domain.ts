@@ -1,11 +1,10 @@
-import {ReactNode} from "react";
 import {ImageProps} from 'next/image'
 
 export type PostMeta = {
-  title: ReactNode
-  summary?: ReactNode
+  title: string
+  summary?: string
   image?: ImageProps['src']
-  date: Date
+  date: Date | string
   categories: string[]
   tags: string[]
   prev?: string
@@ -13,9 +12,8 @@ export type PostMeta = {
 }
 
 export type PostMetaNormalize = PostMeta & {
-  module: string
   path: string // file path
-  link: string // url path without prefix
+  link: string // url path, both path relative to posts root
 }
 
 export const postMeta = (p: PostMeta) => p

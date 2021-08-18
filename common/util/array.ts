@@ -5,3 +5,7 @@ export async function toArray<T>(iterator: AsyncGenerator<T>) {
   }
   return arr
 }
+
+export function range(start: number, end: number) {
+  return Array.from(new Array(end - start).keys()).map(e => e + start)
+}
