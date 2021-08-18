@@ -11,6 +11,7 @@ type Params = {
 }
 
 const Post = (props: PostProps) => {
+  console.log(props)
   return (
     <div>
 

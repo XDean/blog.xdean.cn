@@ -5,20 +5,31 @@ const remarkMath = require('remark-math')
 const rehypeKatex = require('rehype-katex')
 
 module.exports = withPlugins([
-  [withMDX({
-      extension: /\.(md|mdx)$/,
-      options: {
-        remarkPlugins: [remarkMath],
-        rehypePlugins: [
-          rehypeKatex,
-          [rehypePrism, {
-            ignoreMissing: true
-          }]
-        ],
-      },
-    }
-  )],
   {
-    pageExtensions: ['tsx', 'mdx']
+    pageExtensions: ['tsx', 'mdx'],
+    webpack: (config, options) => {
+      config.module.rules.push({
+        test:  /\.(md|mdx)$/,
+        use: [
+          options.defaultLoaders.babel,
+          {
+            loader: require.resolve('@mdx-js/loader'),
+            options: {
+              remarkPlugins: [remarkMath],
+              rehypePlugins: [
+                rehypeKatex,
+                [rehypePrism, {
+                  ignoreMissing: true
+                }]
+              ],
+            },
+          },
+          {
+            loader: require.resolve('./script/post-loader')
+          }
+        ],
+      })
+      return config
+    },
   }
 ])

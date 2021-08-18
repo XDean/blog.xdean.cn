@@ -13,11 +13,11 @@ export async function getAllPostFilePaths() {
 }
 
 export async function getPostMetaByFilePath(path: string): Promise<PostMetaNormalize> {
-  const module = await import(`../posts/${path}`)
+  const module = await import(`pages/posts/${path}`)
   const meta = module.meta as PostMeta
   return {
     ...meta,
-    module: `../posts/${path}`,
+    module: `posts/${path}`,
     path: path,
     link: fileToUrl(path),
   }
