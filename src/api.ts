@@ -5,6 +5,7 @@ import {toArray} from "../common/util/array";
 import ReactDOM from "react-dom/server";
 import React from "react";
 import {JSDOM} from 'jsdom'
+import {CONSTANT} from "./constants";
 
 const postsDirectory = path.join(process.cwd(), "pages/posts")
 
@@ -29,7 +30,8 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
   }
   if (!meta.summary) {
     const paragraphs = root.querySelectorAll('p');
-    meta.summary = Array.from(paragraphs).map(e => e.textContent!).join('\n')
+    const text = Array.from(paragraphs).map(e => e.textContent!).join('\n')
+    meta.summary = text.substring(0, Math.min(text.length, CONSTANT.summarySize))
   }
   if (!meta.image) {
     const imageNode = root.querySelector('img')
@@ -59,8 +61,7 @@ export async function getPostMetaByUrlPath(path: string): Promise<PostMeta> {
 
 export async function getAllPostMetas() {
   const slugs = await getAllPostFilePaths()
-  const metas = await Promise.all(slugs.map(slug => getPostMetaByFilePath(slug)))
-  return metas
+  return await Promise.all(slugs.map(slug => getPostMetaByFilePath(slug)))
 }
 
 function fileToUrl(p: string) {
@@ -69,17 +70,11 @@ function fileToUrl(p: string) {
   } else if (p.endsWith('.md')) {
     p = p.substring(0, p.length - 3)
   }
-  if (p.endsWith('index')) {
-    p = p.substring(0, p.length - 5)
-  }
   return p
 }
 
 function urlToFile(p: string) {
   const res: string[] = []
-  if (p.endsWith('/')) {
-    p = p + 'index'
-  }
   res.push(p + '.mdx')
   res.push(p + '.md')
   return res
