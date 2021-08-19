@@ -1,7 +1,7 @@
 import {ImageProps} from 'next/image'
 
-export type PostMeta = {
-  title: string
+export type PostMetaInline = {
+  title?: string
   summary?: string
   image?: ImageProps['src']
   date: Date
@@ -11,9 +11,9 @@ export type PostMeta = {
   next?: string
 }
 
-export type PostMetaNormalize = PostMeta & {
+export type PostMeta = PostMetaInline & {
   path: string // file path
   link: string // url path, both path relative to posts root
 }
 
-export const postMeta = (p: PostMeta) => p
+export const postMeta = (p: PostMetaInline) => p

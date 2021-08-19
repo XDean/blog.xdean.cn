@@ -1,9 +1,9 @@
-import {PostMetaNormalize} from "src/domain";
+import {PostMeta} from "src/domain";
 import {Page} from "common/util/page";
 import Link from 'next/link'
 
 type Props = {
-  data: Page<PostMetaNormalize>
+  data: Page<PostMeta>
 }
 export const PostPageView = (props: Props) => {
   return (

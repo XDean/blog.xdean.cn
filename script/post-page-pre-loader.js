@@ -1,5 +1,5 @@
 module.exports = async function (src) {
-  return `import {PostView} from 'src/components/PostView'
+  return `import {PostView} from 'src/components/post/PostView'
 
 ${src}
 

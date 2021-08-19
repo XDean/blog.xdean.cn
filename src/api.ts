@@ -1,7 +1,10 @@
 import * as path from "path"
-import {PostMeta, PostMetaNormalize} from "./domain";
+import {PostMeta, PostMetaInline} from "./domain";
 import {walk} from "../common/util/fs";
 import {toArray} from "../common/util/array";
+import ReactDOM from "react-dom/server";
+import React from "react";
+import {JSDOM} from 'jsdom'
 
 const postsDirectory = path.join(process.cwd(), "pages/posts")
 
@@ -12,9 +15,29 @@ export async function getAllPostFilePaths() {
   return paths.map(e => path.relative(postsDirectory, e).replace(/\\/g, '/'))
 }
 
-export async function getPostMetaByFilePath(path: string): Promise<PostMetaNormalize> {
+export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
   const module = await import(`pages/posts/${path}`)
-  const meta = module.meta as PostMeta
+  const meta = {...module.meta as PostMetaInline}
+  const content = ReactDOM.renderToStaticMarkup(React.createElement(module.default))
+  const root = new JSDOM(content).window.document
+  if (!meta.title) {
+    const titleNode = root.querySelector('h1')
+    if (titleNode === null) {
+      throw `${path} has no title`
+    }
+    meta.title = titleNode.textContent!
+  }
+  if (!meta.summary) {
+    const paragraphs = root.querySelectorAll('p');
+    meta.summary = Array.from(paragraphs).map(e => e.textContent!).join('\n')
+  }
+  if (!meta.image) {
+    const imageNode = root.querySelector('img')
+    if (imageNode !== null) {
+      meta.image = imageNode.src
+    }
+  }
+
   return {
     ...meta,
     path: path,
@@ -22,7 +45,7 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMetaNorma
   }
 }
 
-export async function getPostMetaByUrlPath(path: string): Promise<PostMetaNormalize> {
+export async function getPostMetaByUrlPath(path: string): Promise<PostMeta> {
   const paths = urlToFile(path);
   for (const p of paths) {
     try {

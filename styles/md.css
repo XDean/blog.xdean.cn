@@ -13,3 +13,7 @@
 .markdown-body pre {
     @apply max-w-full lg:max-w-[80%];
 }
+
+.markdown-body h1:first-child {
+    display: none;
+}

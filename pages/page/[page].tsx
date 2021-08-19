@@ -1,5 +1,5 @@
 import {GetStaticPaths, GetStaticProps} from 'next'
-import {PostMetaNormalize} from "src/domain";
+import {PostMeta} from "src/domain";
 import {PostPageView} from "src/components/PostPageView";
 import {getAllPostMetas} from "src/api";
 import {CONSTANT} from "src/constants";
@@ -7,7 +7,7 @@ import {range} from "common/util/array";
 import {getPage, Page} from 'common/util/page'
 
 type Props = {
-  data: Page<PostMetaNormalize>
+  data: Page<PostMeta>
 }
 
 type Params = {
