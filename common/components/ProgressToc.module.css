@@ -1,0 +1,40 @@
+.toc {
+    padding: 1em;
+    width: 14em;
+    line-height: 2;
+}
+
+.toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc ul ul {
+    padding-left: 1em;
+}
+
+.toc li a {
+    display: inline-block;
+    color: #aaa;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.toc li.visible > a {
+    color: #111;
+    transform: translate(5px);
+}
+
+.marker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.marker path {
+    transition: all 0.3s ease;
+}

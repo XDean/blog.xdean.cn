@@ -2,6 +2,7 @@ const withPlugins = require('next-compose-plugins');
 const rehypePrism = require('@mapbox/rehype-prism');
 const remarkMath = require('remark-math')
 const rehypeKatex = require('rehype-katex')
+const rehypeSlug = require('rehype-slug')
 const path = require('path')
 
 module.exports = withPlugins([
@@ -23,6 +24,7 @@ module.exports = withPlugins([
             options: {
               remarkPlugins: [remarkMath],
               rehypePlugins: [
+                rehypeSlug,
                 rehypeKatex,
                 [rehypePrism, {
                   ignoreMissing: true
