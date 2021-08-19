@@ -4,7 +4,7 @@ export type PostMeta = {
   title: string
   summary?: string
   image?: ImageProps['src']
-  date: Date | string
+  date: Date
   categories: string[]
   tags: string[]
   prev?: string

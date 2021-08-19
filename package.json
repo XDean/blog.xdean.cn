@@ -9,12 +9,14 @@
   },
   "dependencies": {
     "@mapbox/rehype-prism": "^0.6.0",
+    "babel-plugin-superjson-next": "^0.3.1",
     "github-markdown-css": "^4.0.0",
     "next": "^11.1.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "rehype-katex": "^5.0.0",
-    "remark-math": "^3.0.1"
+    "remark-math": "^3.0.1",
+    "superjson": "^1.7.5"
   },
   "devDependencies": {
     "@mdx-js/loader": "^1.6.22",
