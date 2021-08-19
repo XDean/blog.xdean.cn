@@ -11,7 +11,7 @@ export const Layout = (props: Props) => {
       <nav className={'sticky top-0 z-40'}>
         <AppBar icon={''} title={'XDean的博客'} repo={'blog.xdean.cn'}/>
       </nav>
-      <main>
+      <main className={'mt-4'}>
         {children}
       </main>
       <Footer className={'w-10/12 mt-4 mb-8 mx-auto'}/>

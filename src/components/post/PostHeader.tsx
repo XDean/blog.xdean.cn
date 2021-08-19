@@ -7,13 +7,13 @@ export type Props = {
   meta: PostMeta
 }
 
-export const Header = ({meta}: Props) => {
+export const PostHeader = ({meta}: Props) => {
   return (
     <div id={'title'}>
       <div className={'text-2xl md:text-4xl'}>
         {meta.title}
       </div>
-      <div className={'mt-2 ml-2 flex items-center'}>
+      <div className={'mt-2 ml-0.5 flex items-center space-x-1'}>
         <div>
           {format(meta.date, 'yyyy-MM-dd')}
         </div>

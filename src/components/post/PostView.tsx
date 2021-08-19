@@ -1,6 +1,6 @@
 import {PropsWithChildren} from "react";
 import {PostMeta} from "../../domain";
-import {Header} from "./Header";
+import {PostHeader} from "./PostHeader";
 
 type Props = PropsWithChildren<{
   meta: PostMeta
@@ -9,8 +9,8 @@ type Props = PropsWithChildren<{
 export const PostView = (props: Props) => {
   const {children, meta} = props
   return (
-    <div>
-      <Header meta={meta}/>
+    <div className={'w-full max-w-screen-lg mx-auto'}>
+      <PostHeader meta={meta}/>
       <article className={'markdown-body'}>
         {children}
       </article>
