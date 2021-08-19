@@ -1,8 +1,8 @@
 const withPlugins = require('next-compose-plugins');
-const withMDX = require('@next/mdx');
 const rehypePrism = require('@mapbox/rehype-prism');
 const remarkMath = require('remark-math')
 const rehypeKatex = require('rehype-katex')
+const path = require('path')
 
 module.exports = withPlugins([
   {
@@ -10,8 +10,14 @@ module.exports = withPlugins([
     webpack: (config, options) => {
       config.module.rules.push({
         test:  /\.(md|mdx)$/,
+        include: [
+          path.resolve(__dirname, "pages/posts")
+        ],
         use: [
           options.defaultLoaders.babel,
+          {
+            loader: require.resolve('./script/post-page-post-loader')
+          },
           {
             loader: require.resolve('@mdx-js/loader'),
             options: {
@@ -25,7 +31,7 @@ module.exports = withPlugins([
             },
           },
           {
-            loader: require.resolve('./script/post-loader')
+            loader: require.resolve('./script/post-page-pre-loader')
           }
         ],
       })
