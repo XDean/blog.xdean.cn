@@ -1,21 +1,33 @@
 import React from "react";
 import {ProgressToc} from "common/components/ProgressToc";
+import {TocItem} from "src/domain";
 
-export type TocProps = {
-  toc: string
+type Props = {
+  toc: TocItem[]
+  className?: string
 }
-export const Toc = ({toc}: TocProps) => {
-  if (toc.length === 0) {
-    return null
-  }
+export const Toc = (props: Props) => {
+  const {toc, className} = props
   return (
-    <div className={'hidden md:block float-left sticky border-r mr-4 pr-4 top-48 min-w-32 max-w-56 break-words'}>
-      <a href={'#'} onClick={() => window.scrollTo(0, 0)}>
-        目录
-      </a>
-      <ProgressToc>
-
-      </ProgressToc>
+    <div className={className}>
+      <div className={'break-words flex flex-col items-end'}>
+        <a href={'#'} onClick={() => window.scrollTo(0, 0)}
+           className={'text-2xl mb-4 hover:underline'}
+        >
+          目录
+        </a>
+        <ProgressToc>
+          <ul className={'ml-0'}>
+            {toc.map((e, i) => (
+              <li key={i} style={{marginLeft: (e.level - 2) * 15 + 5}}>
+                <a href={`#${e.anchor}`}>
+                  {e.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </ProgressToc>
+      </div>
     </div>
   )
 }

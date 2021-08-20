@@ -22,9 +22,6 @@ export const ProgressToc = ({children}: PropsWithChildren<{}>) => {
     const toc = tocRef.current
     const tocPath = pathRef.current
 
-    const TOP_MARGIN = 0
-    const BOTTOM_MARGIN = 0.3
-
     let tocItems: TocItem[]
     let pathLength: number
     let lastPathStart: number
@@ -48,9 +45,9 @@ export const ProgressToc = ({children}: PropsWithChildren<{}>) => {
       let pathIndent: number
 
       tocItems.forEach((item, i) => {
-        const x = item.anchor.offsetLeft - 5
-        const y = item.anchor.offsetTop
-        const height = item.anchor.offsetHeight
+        const x = item.listItem.offsetLeft - 5
+        const y = item.listItem.offsetTop
+        const height = item.listItem.offsetHeight
 
         if (i === 0) {
           path.push('M', x, y, 'L', x, y + height);
@@ -90,13 +87,16 @@ export const ProgressToc = ({children}: PropsWithChildren<{}>) => {
         item.listItem.classList.remove(css.visible);
       }
 
-      tocItems.forEach(item => {
+      tocItems.forEach((item, i) => {
         const targetBounds = item.target.getBoundingClientRect();
-        if (targetBounds.bottom > windowHeight * TOP_MARGIN && targetBounds.top < windowHeight * (1 - BOTTOM_MARGIN)) {
+        if (targetBounds.bottom > 0 && targetBounds.top < windowHeight) {
           activateItem(item)
+          if (i > 0 && targetBounds.top > windowHeight * 0.2) {
+            activateItem(tocItems[i - 1])
+          }
         } else {
           deactivateItem(item)
-          if (targetBounds.top < windowHeight * (1 - BOTTOM_MARGIN)) {
+          if (targetBounds.top < windowHeight) {
             lastItem = item
           }
         }
@@ -134,7 +134,7 @@ export const ProgressToc = ({children}: PropsWithChildren<{}>) => {
       <div ref={tocRef}>
         {children}
       </div>
-      <svg className={css.marker + ' aa'}
+      <svg className={css.marker}
            width="200"
            height="200"
            xmlns="http://www.w3.org/2000/svg">

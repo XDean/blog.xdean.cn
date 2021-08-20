@@ -9,11 +9,19 @@ export type PostMetaInline = {
   tags: string[]
   prev?: string
   next?: string
+  toc?: boolean
+}
+
+export type TocItem = {
+  level: number
+  text: string
+  anchor: string
 }
 
 export type PostMeta = PostMetaInline & {
   path: string // file path
   link: string // url path, both path relative to posts root
+  tocData?: TocItem[]
 }
 
 export const postMeta = (p: PostMetaInline) => p

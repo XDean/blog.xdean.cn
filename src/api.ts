@@ -1,5 +1,5 @@
 import * as path from "path"
-import {PostMeta, PostMetaInline} from "./domain";
+import {PostMeta, PostMetaInline, TocItem} from "./domain";
 import {walk} from "../common/util/fs";
 import {toArray} from "../common/util/array";
 import ReactDOM from "react-dom/server";
@@ -18,7 +18,11 @@ export async function getAllPostFilePaths() {
 
 export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
   const module = await import(`pages/posts/${path}`)
-  const meta = {...module.meta as PostMetaInline}
+  const meta = {
+    ...module.meta as PostMetaInline,
+    path: path,
+    link: fileToUrl(path),
+  } as PostMeta
   const content = ReactDOM.renderToStaticMarkup(React.createElement(module.default))
   const root = new JSDOM(content).window.document
   if (!meta.title) {
@@ -39,12 +43,21 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
       meta.image = imageNode.src
     }
   }
-
-  return {
-    ...meta,
-    path: path,
-    link: fileToUrl(path),
+  if (meta.toc !== false) {
+    const headers = root.querySelectorAll('h2,h3,h4')
+    const toc: TocItem[] = []
+    headers.forEach(h => {
+      const level = Number(h.tagName.substring(1))
+      toc.push({
+        level: level,
+        text: h.textContent!,
+        anchor: h.id,
+      })
+    })
+    meta.tocData = toc
   }
+
+  return meta
 }
 
 export async function getPostMetaByUrlPath(path: string): Promise<PostMeta> {
