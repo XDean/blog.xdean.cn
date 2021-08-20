@@ -10,7 +10,7 @@ module.exports = withPlugins([
     pageExtensions: ['tsx', 'mdx'],
     webpack: (config, options) => {
       config.module.rules.push({
-        test:  /\.(md|mdx)$/,
+        test:  /\.mdx$/,
         include: [
           path.resolve(__dirname, "pages/posts")
         ],
