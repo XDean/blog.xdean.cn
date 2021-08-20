@@ -20,9 +20,8 @@ export const AppBar = (props: Props) => {
         {title}
       </div>
       <div className={'flex-grow w-0'}/>
-      <div className={'flex-row items-center hidden md:flex'}>
+      <div className={'flex-row items-center flex space-x-2'}>
         <XDeanIcon/>
-        <div className={'mr-1'}/>
         <GithubIcon repo={repo}/>
       </div>
     </div>
