@@ -17,7 +17,7 @@ export const PostCard = (props: Props) => {
       <a>
         <div
           className={clsx(
-            'm-2 transition duration-300 transform',
+            'm-2 transition duration-300 transform subpixel-antialiased',
             'group rounded border border-gray-300 flex flex-row cursor-pointer',
             'hover:ring hover:shadow-lg hover:translate-x-2')}>
           <div className={'flex flex-col w-8/12 p-2 md:p-4'}>

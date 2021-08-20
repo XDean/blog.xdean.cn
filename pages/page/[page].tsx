@@ -16,7 +16,7 @@ type Params = {
 
 export default function View(props: Props) {
   return (
-    <PostPageView data={props.data}/>
+    <PostPageView page={props.data}/>
   )
 }
 

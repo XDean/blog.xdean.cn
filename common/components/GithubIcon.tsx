@@ -17,9 +17,7 @@ export const GithubIcon = (props: Props) => {
        href={`https://github.com/${user}/${repo}`}
     >
       <FontAwesomeIcon icon={faGithub}
-                       style={{
-                         fontSize: width
-                       }}/>
+                       style={{fontSize: width}}/>
     </a>
   )
 }

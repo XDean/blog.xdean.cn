@@ -1,0 +1,17 @@
+.link {
+    @apply bg-white border-gray-300 text-gray-500 relative inline-flex;
+    @apply items-center px-4 py-2 border text-sm font-medium cursor-pointer;
+    @apply hover:bg-gray-50;
+}
+
+.first {
+    @apply rounded-l-md
+}
+
+.last {
+    @apply rounded-r-md
+}
+
+.current {
+    @apply bg-indigo-50 border-indigo-500 text-indigo-600 z-10;
+}
