@@ -1,13 +1,15 @@
 .toc {
-    @apply leading-8 pl-3;
+    @apply leading-8 pl-4 pr-2;
 }
 
 .toc li a {
-    @apply transition transform text-gray-500 hover:underline hover:text-gray-900;
+    @apply transition transform duration-500 ease-out translate-x-0;
+    @apply inline-block text-gray-500 antialiased;
+    @apply  hover:underline hover:text-gray-900;
 }
 
 .toc li.visible > a {
-    @apply translate-x-[5px] text-gray-800;
+    @apply translate-x-2 text-gray-800 font-medium;
 }
 
 .marker {

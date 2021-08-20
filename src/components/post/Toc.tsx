@@ -10,9 +10,9 @@ export const Toc = (props: Props) => {
   const {toc, className} = props
   return (
     <div className={className}>
-      <div className={'break-words flex flex-col items-end'}>
+      <div className={'break-words flex flex-col items-start max-w-[16rem]'}>
         <a href={'#'} onClick={() => window.scrollTo(0, 0)}
-           className={'text-2xl mb-4 hover:underline'}
+           className={'text-2xl mb-4 ml-6 hover:underline'}
         >
           目录
         </a>

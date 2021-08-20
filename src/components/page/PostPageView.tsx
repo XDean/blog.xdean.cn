@@ -1,19 +1,15 @@
 import {PostMeta} from "src/domain";
 import {Page} from "common/util/page";
-import Link from 'next/link'
+import {PostCard} from "./PostCard";
 
 type Props = {
   data: Page<PostMeta>
 }
 export const PostPageView = (props: Props) => {
   return (
-    <div>
+    <div className={'flex flex-col items-center w-full max-w-screen-lg mx-auto'}>
       {props.data.data.map(e => (
-        <Link key={e.link} href={`/posts/${e.link}`}>
-          <a>
-            {e.title}
-          </a>
-        </Link>
+        <PostCard meta={e} key={e.link}/>
       ))}
     </div>
   )

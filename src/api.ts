@@ -36,6 +36,10 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
     const paragraphs = root.querySelectorAll('p');
     const text = Array.from(paragraphs).map(e => e.textContent!).join('\n')
     meta.summary = text.substring(0, Math.min(text.length, CONSTANT.summarySize))
+    const idx = meta.summary.lastIndexOf('\n')
+    if (idx !== -1) {
+      meta.summary = meta.summary.substring(0, idx)
+    }
   }
   if (!meta.image) {
     const imageNode = root.querySelector('img')

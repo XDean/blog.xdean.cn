@@ -1,6 +1,6 @@
 import {GetStaticPaths, GetStaticProps} from 'next'
 import {PostMeta} from "src/domain";
-import {PostPageView} from "src/components/PostPageView";
+import {PostPageView} from "src/components/page/PostPageView";
 import {getAllPostMetas} from "src/api";
 import {CONSTANT} from "src/constants";
 import {range} from "common/util/array";
