@@ -34,6 +34,7 @@ export const PostView = (props: Props) => {
           {children}
           <PostLinks meta={meta}/>
         </div>
+        <hr className={'mt-6'}/>
         <div className={'mt-4'}>
           <PostFooter meta={meta}/>
         </div>

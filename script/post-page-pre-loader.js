@@ -3,8 +3,12 @@ module.exports = async function (src) {
 
 ${src}
 
-export default ({ children, meta, ...rest }) => {
-  return <PostView meta={meta}>{children}</PostView>
+export default ({children, meta}) => {
+  return (
+    <PostView meta={meta}>
+      {children}
+    </PostView>
+  )
 }
 `
 }

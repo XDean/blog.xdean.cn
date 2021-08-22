@@ -6,6 +6,7 @@ import ReactDOM from "react-dom/server";
 import React from "react";
 import {JSDOM} from 'jsdom'
 import {CONSTANT} from "./constants";
+import {slash} from "common/util/path";
 
 const postsDirectory = path.join(process.cwd(), "pages/posts")
 
@@ -13,10 +14,11 @@ export async function getAllPostFilePaths() {
   const paths = await toArray(walk(postsDirectory, {
     ext: ['.md', '.mdx']
   }))
-  return paths.map(e => path.relative(postsDirectory, e).replace(/\\/g, '/'))
+  return paths.map(e => slash(path.relative(postsDirectory, e)))
 }
 
 export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
+  path = slash(path)
   const module = await import(`pages/posts/${path}`)
   const meta = {
     ...module.meta as PostMetaInline,

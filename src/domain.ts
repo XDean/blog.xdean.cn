@@ -26,6 +26,8 @@ export type PostMeta = PostMetaInline & {
   path: string // file path
   link: string // url path, both path relative to posts root
   tocData?: TocItem[]
+  prevMeta?: PostMeta
+  nextMeta?: PostMeta
 }
 
 export const postMeta = (p: PostMetaInline) => p
