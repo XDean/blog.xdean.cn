@@ -1,0 +1,186 @@
+import {postMeta} from "src/domain";
+import logo from './deno.png'
+import Image from "common/components/Image";
+
+export const meta = postMeta({
+  date: new Date('2021-03-09'),
+  image: logo,
+  tags: ['Javascript', 'Typescript', 'Deno', 'Node'],
+  categories: ['Coding'],
+})
+
+# 认识Deno — 2020年最受瞩目的JS项目
+
+<Image src={logo}/>
+
+2020年刚刚过去不久，对于现实世界来说是特殊的一年，对于Javascript世界也是特殊的一年。
+在Github Javascript排行榜上，Deno一举击败了蝉联5年冠军的Vue.js ，以`30.2k`star荣登榜首。
+如果你不太关注前沿消息，你一定会问，这个雨点里的小恐龙是什么来头？
+
+## What's Deno
+
+简单的说，Deno(蒂诺)是一个Javascript运行时。
+
+这是你要问了，JS运行时，我们不是有Node了么？
+是的，Deno就是Node的——翻转, no-de => de-no。
+
+不止如此，Deno和Node还有同一个父亲，Ryan Dahl ([ry@github](https://github.com/ry))。
+虽然ry已经9年没有维护Node了，但是他仍是Node的Top 1贡献者。
+既然如此，ry又为何要回来搞什么Deno呢？
+
+## Why Node is not enough
+
+Node于2009年首次发行，距今已经12年了，距Deno首次发行的2018也有9年时间。
+在这些年里Javascript生态发展迅速，尤其是
+
+- ES Modules
+- Typescript
+- Promise API (`await`/`async`)
+
+这些新技术对于始于2009年的Node来说都是巨大的包袱，直进Node对他们的支持都不甚理想，需要额外的插件配置(例如Babel)。
+
+另外，Node的包管理工具NPM也一直为人所诟病
+
+- 冗杂的`node_modules`目录，小文件数量惊人
+- 不安全的三方代码，无法限制权限
+- 中心化管理 ([经典案例](https://news.ycombinator.com/item?id=11340510))
+
+这些问题都将在Deno里得以解决
+
+## What's Deno again
+
+Deno是一个**极简的**且**安全的**且**现代化的**Javascript/**TypeScript**运行时
+
+- 只有且永远只有一个可执行文件
+- 默认的安全环境，需要显式声明权限(如文件，网络)
+- 开箱即用的Typescript
+- 基于URL的模块管理
+- 内置常用工具(如bundle, fmt)
+- 交叉编译原生可执行程序
+
+Deno主要构建于
+
+- V8
+- Rust
+- Tokio (event lop)
+- TypeScript
+
+之所以不像Node一样用C++，作者的原话是：
+
+> In C++ you have to write everything yourself
+> 
+> ... or spend 80% of your time maintaining the build system
+
+## Have a Try
+
+介绍了这么多，让我们上手试一试Deno，到底好不好用
+
+### Installtion
+
+Deno的安装只需要一行命令，他会下载一个单独的`deno.exe`到你的`~/.deno/bin`并添加到`PATH`
+
+- Windows (powershell): `iwr https://deno.land/x/install/install.ps1 -useb | iex`
+- Linux: `curl -fsSL https://deno.land/x/install/install.sh | sh`
+- 手动下载: https://github.com/denoland/deno/releases
+
+现在试一试`deno --version`来验证安装成功
+
+### Hello World
+
+直接用run命令就可以运行来自任何本地或者网络上的文件
+
+```shell
+deno run https://deno.land/std/examples/welcome.ts
+```
+
+
+### cat
+
+Deno可以把脚本打包成可执行文件安装到本地，我们可以实现一个简单的`cat`命令。
+这里可以看到`--allow-read`，如果不加这个flag将会报错。
+
+```shell
+deno install --allow-read -n deno_cat https://deno.land/std/examples/cat.ts
+deno_cat file.txt
+```
+
+### chat
+
+Deno实现的简单聊天工具，运行后打开http://localhost:8080/
+
+```shell
+deno run --allow-net --allow-read https://deno.land/std/examples/chat/server.ts
+```
+
+### react
+
+我自己开发的工具包，快速搭建一个Deno的react项目
+
+```shell
+deno install -A --unstable -n deno-create-react-app https://deno.land/x/create_react_app/mod.ts
+deno-create-react-app init my-app
+cd my-app
+deno-create-react-app run
+```
+
+## 我为什么喜欢Deno
+
+相比于Deno强调的Secure，我对于Deno最大的喜爱就是一个点，简单
+
+**安装简单**
+
+- 一键安装
+- 只有一个可执行文件import url
+- 不需要配置环境
+- 不需要配置文件
+
+这就是我理想中应用程序的样子，约定优于配置，封装所有不必要的细节。
+
+**开发简单**
+
+- 没有`node_modules`，这点非常重要
+- URL Import，虽然多数时候依赖项会选`deno.land`，但是不妨碍随时切换到其他源(如github)
+- Typescript支持，typescript的类型系统是我用过最为强大的，node编译/运行ts都必须要装插件
+- 异步友好，这一点是Javascript的主要优势
+
+**部署简单**
+
+- 一键运行来自网络任何地方的程序
+- 打包为单个可执行文件
+
+## Deno的局限性
+
+- Deno不兼容npm生态，自己的生态仍在发展中(即使可以利于诸如jspm的工具导入npm模块，兼容性仍是问题)
+- 性能略低于Node (严格来说，如果你考虑性能的话Node也不是一个好选择，应该切换到其他语言)
+
+## 结语
+
+2020年5月，Deno发布了1.0版本。时至今日，Deno-v1.8已经发布了。
+但是我们还是要记住，它还只是一只3岁的小恐龙，还有很多不成熟的地方。
+如果你正在评估是否使用Deno，以下建议可供参考
+
+- 对于已经平稳运行的项目，不建议切换到Deno，Deno仍处在早期采用者阶段
+- 而对于尚在初期的项目，如果你想使用Javascript/Typescript，Deno会是一个不坏的选择
+- 对于个人开发，Deno是一个快速且有趣的开始
+- 对于serverless应用，Deno已经逐步开始流行
+
+虽然我很喜欢Deno的设计，但是也必须承认，它无法取代Node，至少从现在看来。
+
+但是同时我们又可以看到，Github上Node仓库里已经有50+和Deno相关的Issue，例如 [HTTP Imports](https://github.com/nodejs/node/pull/36328) 这一重要特性。
+而且Deno的Star数量也已经直逼Node。
+Deno的存在也给了Node巨大的前进动力。
+即使Deno最终没能取代Node，我们也可以得到更好的Node，不是吗？
+
+## Reference
+
+- https://deno.land/
+- https://risingstars.js.org/2020/zh
+- https://www.ruanyifeng.com/blog/2020/01/deno-intro.html
+- https://www.youtube.com/watch?v=1gIiZfSbEAE
+- https://www.youtube.com/watch?v=puXyo1jGQys
+
+### 其他阅读
+
+- [Deno Benchmark](https://deno.land/benchmarks)
+- [Discussion on V2ex](https://v2ex.com/t/677421)
+- [Why I Believe Deno is a Step in the Wrong Direction for JavaScript Runtime Environments](https://github.com/freeCodeCamp/news-translation/blob/main/chinese/articles/why-deno-is-a-wrong-step-in-the-future.md) (译文，原文已删除)
