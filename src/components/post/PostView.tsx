@@ -4,6 +4,8 @@ import {PostHeader} from "./PostHeader";
 import {Toc} from "./Toc";
 import Head from "next/head";
 import clsx from "clsx";
+import {PostFooter} from "./PostFooter";
+import {PostLinks} from "./PostLinks";
 
 type Props = PropsWithChildren<{
   meta: PostMeta
@@ -20,7 +22,7 @@ export const PostView = (props: Props) => {
         <div
           className={clsx('hidden md:block float-left sticky top-32',
             'border-r mr-4 pr-4 min-w-xl max-w-4xl max-h-[80vh] overflow-y-auto',
-          'scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-0')}>
+            'scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-0')}>
           <Toc toc={meta.tocData}/>
         </div>
       )}
@@ -30,6 +32,10 @@ export const PostView = (props: Props) => {
         </div>
         <div className={'markdown-body'}>
           {children}
+          <PostLinks meta={meta}/>
+        </div>
+        <div className={'mt-4'}>
+          <PostFooter meta={meta}/>
         </div>
       </article>
     </div>
