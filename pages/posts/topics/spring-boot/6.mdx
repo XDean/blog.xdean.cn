@@ -1,0 +1,92 @@
+import {postMeta} from "src/domain";
+import logo from './spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2019-11-04'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '5.mdx',
+})
+
+# Spring Boot (06) - Auto Configuration 自动配置 与 Starter 启动器
+
+前面几节讲解了Spring容器以及Bean的用法。
+其实至此Spring的核心功能已经结束了，从本节往后所有的功能不过是在容器之内所做的拓展。
+对于Spring Boot自己来说，最重要的功能就是Auto Configuration(自动配置)了。
+
+对于经历过传统Spring的开发者来说，Spring Boot无疑是大大解放了生产力。
+其"约定优于配置"的思想将我们从无数的配置文件中解放出来。
+大部分时候我们不需要任何配置就可以获得想要的对象。
+
+例如在我们第一节的`Hello-Web`中，没有做任何Web相关配置却成功的启动了一个Web服务。
+又比如如果你想要一个内存数据库，只需要引入`HSQLDB`作为依赖而不需要任何配置，一个数据库连接就被置入了容器之中。
+这些都是得益于Auto Configuration特性。
+
+## 如何开启
+
+要启用自动配置功能，只需要使用`@EnableAutoConfiguration`注解。
+默认地，`@SpringBootApplication`注解已经包含了该注解。
+
+每个自动配置其实就是一个Java类，如果想要禁用特定地自动配置，只需要在`@EnableAutoConfiguration`上排除相应地类。
+如`@EnableAutoConfiguration(exclude={DataSourceAutoConfiguration.class})`
+
+## 如何工作
+
+自动配置地工作原理类似于Java SPI。
+在类路径下扫描所有`/META-INF/spring.factories`文件，其中定义了键值对，值以逗号分隔，每个值都是类名，
+例如Spring Boot默认提供的`spring.factories`:
+
+```properties
+...
+# Auto Configuration Import Filters
+org.springframework.boot.autoconfigure.AutoConfigurationImportFilter=\
+org.springframework.boot.autoconfigure.condition.OnBeanCondition,\
+org.springframework.boot.autoconfigure.condition.OnClassCondition,\
+org.springframework.boot.autoconfigure.condition.OnWebApplicationCondition
+
+# Auto Configure
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration,\
+org.springframework.boot.autoconfigure.aop.AopAutoConfiguration,\
+org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration,\
+org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration,\
+ 
+...
+```
+
+其中`EnableAutoConfiguration`即为启用的自动配置选项，每一个类其实就是一个正常的`@Configuration`，他们会自动地被加载到容器之中。
+
+## 自定义
+
+如果你在开发Spring工具库，自动配置可以帮助你的用户减少配置。
+正如上文说的工作原理，自定义自动配置项只需要在你的工程目录下创建`/META-INF/spring.factories`文件并配置
+
+```text
+    org.springframework.boot.autoconfigure.EnableAutoConfiguration= your.package.class
+```
+
+这样你的类文件就会被Spring容器扫描，从而获取到你的配置项。
+
+### Starter
+
+另一方面，Spring官方社区认为，将自动配置选项(以及所有配置相关)放在源工程中会混淆其职责。
+官方推荐的方法是单独创建一个starter工程，其包含了所有配置选项(包括不限于依赖项、自动配置文件)。
+
+一个典型的示例可以参照[jasypt-spring-boot](https://github.com/ulisesbocchio/jasypt-spring-boot)
+
+### 自动生成
+
+使用自动配置时唯一的一个小问题就是我们需要自己去写`spring.factories`文件。
+
+那么如果有代码改动我们需要重新手动编辑该文件。这样不仅麻烦，时间久了难免产生疏漏。
+
+推荐使用我的小工具[auto-spring-factories](https://github.com/XDean/auto-spring-factories)
+
+只需要添加注解即可自动生成`spring.factories`文件
+
+```java
+@AutoSpringFactories(EnableAutoConfiguration.class)
+public class MyAutoConfiguration{
+}
+```

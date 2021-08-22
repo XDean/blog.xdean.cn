@@ -1,0 +1,271 @@
+import {postMeta} from "src/domain";
+import logo from '../spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2020-02-18'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '3-encrypt.mdx',
+  next: '5-async.mdx',
+  links: [
+    {
+      name: 'Cache 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/cache'
+    }
+  ]
+})
+
+# Spring Boot 番外 (04) - 缓存 Cache
+
+对于程序员，缓存一定不是一个陌生的概念。
+在我们编写的程序中，数据的处理和传递无时无刻不在发生着。
+而其中总会存在着一些的重复的操作和数据。
+
+- 重复的处理会浪费CPU
+- 重复的读写会浪费磁盘
+- 重复的传输会浪费网络
+
+为了减少这种浪费，也为了加快响应时间，我们就需要缓存。
+把处理好的数据保留下来(最常见的是放在内存)，下次再要做相同的事情，就可以直接返回结果。
+
+Spring Boot核心库就为我们提供了缓存功能，相关代码在`org.springframework.cache`包下。
+
+要开启缓存功能，只需要添加上`@EnableCaching`注解即可。
+接着我们就要在需要的方法上加上注解来实现缓存。
+Spring Boot提供了以下几种注解。
+
+- `@Cacheable`, 该方法会使用缓存
+- `@CachePut`, 该方法不使用缓存，但是结果会置入缓存
+- `@CacheEvict`, 该方法不使用缓存，而是将匹配的缓存删除
+- `@Caching`, 复合了以上三个注解，通常你不会用到
+- `@CacheConfig`, 对类下的所有缓存进行默认配置
+
+其中，前三个注解是核心，每个注解都有若干配置，所以配置的含义都会在后面一一讲解。
+
+我们先从最简单的例子看起
+
+## `@Cacheable`
+
+我们现在有一个方法需要开启缓存
+
+```java
+public String hello(String who) {
+    // 假设该方法消耗了大量资源，需要缓存
+    return "Hello " + who;
+}
+```
+
+我们只需要在这个方法上加上`@Cacheable`即可。
+但是注意，同时必须要指定`cacheNames`。
+
+### `cacheNames`
+
+`cacheNames`的存在类似于作用域。
+想象你有一个数据库里有两张表，都需要通过主键ID来缓存。
+这时你就需要两个互不相关的缓存，即`cacheNames = "table_1"`和`cacheNames = "table_2"`。
+这样即使同样是查询`ID = 1`，也不会相互干扰，只会命中自己这个域中的缓存。
+这里我们仅作示例，随便取一个缓存名。
+
+_*有心的读者应该注意到了复数形式，一个缓存可以定义多个缓存域，在示例代码中有相关的测试_
+
+```java
+@Cacheable(cacheNames = "test")
+public String hello(String who) {
+    System.out.println("Calculating Hello: " + who); // 打印日志以方便知道调用了几次
+    return "Hello " + who;
+}
+```
+
+现在让我们来测试代码
+
+```java
+System.out.println(app.hello("World"));
+System.out.println(app.hello("World"));
+System.out.println(app.hello("XDean"));
+System.out.println(app.hello("XDean"));
+```
+
+输出结果为
+
+    Calculating Hello: World
+    Hello World
+    Hello World
+    Calculating Hello: XDean
+    Hello XDean
+    Hello XDean
+    
+可以看到，虽然连续调用了两次，但是只有第一次真正地调用了方法。
+而如果用不同的参数去调用，第一次也会真正地调用方法。
+
+那么`Cacheable`是如何区分不同参数调用的缓存命中呢？答案就是`key`参数
+
+### `key`
+
+对于每次缓存调用，都会计算出一个关键值，即`key`，通过这个值来寻找缓存。
+默认情况下，`key`通过所有参数计算(详见`SimpleKeyGenerator`)。
+你也可以通过`key`属性来配置自定义的值。
+`key`的值是一个SpEL表达式，上下文将会提供一个名为`root`类型为`CacheExpressionRootObject`的变量。
+
+让我们来尝试使用`key`改变缓存的行为
+
+```java
+@Cacheable(cacheNames = "keyAll")
+public String keyAll(String who, int i) {
+    System.out.println("Calculating KeyAll: " + who + ", " + i);
+    return "Hello " + who;
+}
+
+@Cacheable(cacheNames = "keyWho", key = "#root.args[0]")
+public String keyWho(String who, int i) {
+    System.out.println("Calculating KeyWho: " + who + ", " + i);
+    return "Hello " + who;
+}
+```
+
+我们的函数现在增加了一个参数
+
+- 第一个方法使用默认的`key`，即全部参数
+- 第二个方法只用到了第一个参数`who`
+
+我们来测试一下效果
+
+```java
+System.out.println(app.keyAll("World", 0));
+System.out.println(app.keyAll("World", 1));
+System.out.println(app.keyWho("World", 0));
+System.out.println(app.keyWho("World", 1));
+```
+
+输出结果为
+
+    Calculating KeyAll: World, 0
+    Hello World
+    Calculating KeyAll: World, 1
+    Hello World
+    Calculating KeyWho: World, 0
+    Hello World
+    Hello World
+
+可以看到，指定key的方法只通过第一个参数就命中了缓存
+
+## `@CachePut`
+
+上面展示了如何用`@Cacheable`进行缓存。
+`@CachePut`并不会使用缓存，而仅是将结果置入缓存。
+
+```java
+@CachePut(cacheNames = "put")
+public String put(String who) {
+    System.out.println("Calculating Put: " + who);
+    return "Hello " + who;
+}
+
+@Cacheable(cacheNames = "put")
+public String getPut(String who) {
+    System.out.println("Calculating GetPut: " + who);
+    return "Hello " + who;
+}
+```
+
+上面代码分为两部分，一个`@CachePut`和一个`@Cacheable`。他们使用相同的`cacheNames`和`key`（因为参数相同）。
+让我们来测试以下`@CachePut`的行为。
+
+```java
+System.out.println(app.put("World"));
+System.out.println(app.put("World"));
+System.out.println(app.getPut("World"));
+```
+
+    Calculating Put: World
+    Hello World
+    Calculating Put: World
+    Hello World
+    Hello World
+    
+可以看到，两次调用`put`都进入了方法体，而第一次调用`getPut`就命中了缓存。原因就是`@CachePut`将结果置入了缓存。
+
+## `@CacheEvict`
+
+最后的`@CacheEvict`其实就是`@CachePut`的反面，它负责将缓存删除。
+
+```java
+@CacheEvict(cacheNames = "evict")
+public void evict(String who) {
+    System.out.println("Evict: " + who);
+}
+
+@Cacheable(cacheNames = "evict")
+public String getEvict(String who) {
+    System.out.println("Calculating GetEvict: " + who);
+    return "Hello " + who;
+}
+```
+
+测试代码:
+
+```java
+System.out.println(app.getEvict("World"));
+System.out.println(app.getEvict("World"));
+app.evict("World");
+System.out.println(app.getEvict("World"));
+```
+
+测试结果
+
+    Calculating GetEvict: World
+    Hello World
+    Hello World
+    Evict: World
+    Calculating GetEvict: World
+    Hello World
+
+缓存正常工作，在`evict`后，缓存被清除了，再一次调用便没有缓存可以命中。
+
+## 其他缓存参数
+
+前面只讲到最主要的`cacheNames`和`key`，缓存注解还有很多其他参数。
+
+| 参数 | 类型 | 用法 |
+|  ---- | ---- | ---- |
+| `keyGenerator` | `String`(BeanName) | 指定`KeyGenerator`用以生成缓存的键值，与`key`互斥 |
+| `cacheManager`| `String`(BeanName) | 指定`CacheManager`，`cacheResolver`互斥 |
+| `cacheResolver` | `String`(BeanName) | 指定`CacheResolver` |
+| `condition` | `String`(SpEL) | 当结果为`true`时才会触发缓存行为，可用的上下文变量同`key` |
+| `unless` | `String`(SpEL) | 当结果为`true`时阻止缓存行为，该表达式在方法执行结束时调用，所以上下文还有额外的变量`#result`指向了返回值 |
+| `sync` | `boolean` | 是否同步调用缓存，该方法只可以是单一的缓存操作，且不能有`unless`。同时需要注意并非所有的缓存实现都支持这一功能 |
+| `CacheEvict.allEntries` | `boolean` | 该操作将删除所有缓存，与`key`互斥 |
+| `CacheEvict.beforeInvocation` | `boolean` | 该清除操作会在方法调用前执行 |
+
+## 与第三方集成
+
+Spring Boot Cache可以与许多第三方框架一键集成。这里我们以Redis为例，更多内容参考[官方文档](https://docs.spring.io/spring-boot/docs/2.1.7.RELEASE/reference/html/boot-features-caching.html#boot-features-caching-provider)
+
+要集成Redis，只需要像平常一样，添加上Redis的依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
+
+Spring Boot Cache就会自动切换到Redis。
+默认的Redis地址为本地6379端口，你可以通过配置文件配置。
+
+再次运行我们完整的测试代码，我们可以从Redis中查询到我们的缓存信息
+
+    # keys *
+    evict::World
+    test::World
+    put::World
+    scope2::XDean
+    keyAll::SimpleKey [World,1]
+    scope2::World
+    scope1::World
+    scope1::XDean
+    keyWho::World
+    test::XDean
+    keyAll::SimpleKey [World,0]
+
+如果你的项目配置了Redis，却不想用他来做Cache，可以修改`spring.cache.type`来强制使用指定的缓存实现。

@@ -1,0 +1,246 @@
+import {postMeta} from "src/domain";
+import logo from './spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2019-09-15'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '4.mdx',
+  next: '6.mdx',
+  links: [
+    {
+      name: '@Scope 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/scope'
+    }, {
+      name: '@Conditional 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/conditional'
+    }, {
+      name: '@DependsOn 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/dependson'
+    }, {
+      name: 'Bean生命周期示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/lifecycle'
+    }
+  ]
+})
+
+# Spring Boot (05) - Bean的配置与生命周期
+
+Spring Boot提供了一系列的注解来帮助我们配置Bean，从而正确地找到合适地依赖项。
+
+## Bean的配置
+
+### `@Scope`
+
+在Spring中，Bean默认是单例的，如果想要非单例的Bean，你需要定义`@Scope`，即作用域。
+
+在Spring核心库中，只有两种scope，`singleton`和`prototype`。
+同时你也可以根据业务需求自定义scope，如Spring-Web中有`request`,`session`等
+
+- `singleton`, 一个容器中只有一个Bean
+- `prototype`, 每个依赖者都会创建一个新的Bean
+- `request`, 每个 HTTP Request 创建一个新的Bean
+- `session`, 每个 HTTP Session 创建一个新的Bean
+
+例如
+
+```java
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE) // 使用变量而非字面量，类型安全 //HL
+public class CompA {
+}
+
+@Bean
+@Scope("prototype") //HL
+public static BeanA beanA() {
+    return new BeanA();
+}
+
+public static void main(String[] args) {
+    ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+
+    System.out.println(ctx.getBean(BeanA.class));
+    System.out.println(ctx.getBean("beanA"));
+
+    System.out.println(ctx.getBean(CompA.class));
+    System.out.println(ctx.getBean("compA"));
+}
+```
+
+输出
+
+```text
+xdean.share.spring.inject.scope.BeanA@6b6776cb
+xdean.share.spring.inject.scope.BeanA@1863d2fe
+xdean.share.spring.inject.scope.CompA@1787bc24
+xdean.share.spring.inject.scope.CompA@544d57e
+```
+
+可以看到多次获取的Bean不是一个实例。
+
+See Also：[自定义Scope](extra/1-custom-scope.md)
+
+### `@Conditional`
+
+一些Bean的配置与运行环境相关。一个典型的例子是JDBC Driver。例如我们现在要在容器中注入一个`Driver`，
+
+- 当Classpath中存在MySQL Connector时我们提供一个`MysqlDriver`，
+- 当Classpath中存在的是Sqlite Connector时我们应当提供一个`SqliteDriver`，
+
+这时我们就需要使用`@Conditional`了。
+
+`@Conditional`是一个元注解，一般不直接用在Bean上。
+Spring定义了一系列`@ConditionalOnXXX`注解可供使用，其中较为常用的有
+
+- `@ConditionalOnClass`，当类存在时构建Bean
+- `@ConditionalOnMissingClass`，当类不存在时构建Bean
+- `@ConditionalOnBean`，当指定Bean存在时构建该Bean
+- `@ConditionalOnMissingBean`，当指定Bean不存在时构建该Bean
+
+例
+
+```java
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+        System.out.println(ctx.getBean(BeanA.class).i);
+    }
+
+    @Bean
+    @ConditionalOnClass(name = "xdean.share.spring.inject.conditional.SomeDriver")
+    public static BeanA beanA1() {
+        return new BeanA(1);
+    }
+
+    @Bean
+    @ConditionalOnBean
+    @ConditionalOnMissingClass("xdean.share.spring.inject.conditional.SomeDriver")
+    public static BeanA beanA2() {
+        return new BeanA(2);
+    }
+}
+
+// try comment out this class and run again
+public class SomeDriver {}
+
+public class BeanA {
+    int i;
+    public BeanA(int i) {this.i = i;}
+}
+```
+
+运行以上代码
+
+- 如果有定义`SomeDriver`，则输出1
+- 如果`SomeDriver`被注释掉，则输出2
+
+See Also：[自定义Condition](extra/2-custom-condition.md)
+
+### `@DependsOn`
+
+除了环境依赖，一些Bean还存在着顺序依赖，我们可以用`@DependsOn`指定顺序依赖关系。
+
+例如
+
+```java
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Bean
+    @DependsOn("beanA2") // try comment out this line //HL
+    public static BeanA beanA1() {
+        System.out.println("Bean 1");
+        return new BeanA(1);
+    }
+
+    @Bean
+    public static BeanA beanA2() {
+        System.out.println("Bean 2");
+        return new BeanA(2);
+    }
+}
+```
+
+输出结果为
+
+```text
+Bean 2
+Bean 1
+```
+
+Bean加载顺序被改变了。
+
+### 其他配置项
+
+#### `@Lazy`
+
+设置Bean为懒加载模式，容器初始化时不会主动构造Bean，而是在第一次被依赖时构造。
+
+#### `@Primary`
+
+设置Bean为首选，如果容器内存在多个相同类型的Bean，依赖者会优先使用该Bean。
+
+#### `@Profile`
+
+一种`@Conditional`，在指定Profile激活时Bean才有效，关于Profile后面关于Spring Boot配置的章节将会讲到。
+
+## Bean的生命周期
+
+Spring Boot提供了一些注解和回调方法来帮助Bean本身正确地初始化和销毁。
+
+```viz-dot
+digraph G {
+	inst [label="Instantiation"]
+	popu [label="Populate Properties"]
+	init [label="Initialization"]
+	dest [label="Destroy"]
+	
+	inst -> popu
+	popu -> init
+	init -> dest
+}
+```
+
+Bean的生命周期主要有四个阶段
+
+- Instantiation, 实例化，即构造出新的实例，其中包含了构造器注入
+- Populate Properties, 属性赋值，即所有依赖注入
+- Initialization, 初始化，调用Bean的各个初始化方法
+- Destroy, 销毁，调用Bean的各个销毁方法
+
+每个阶段又提供了多种切入方式
+
+- Spring Boot提供的回调接口
+    - `InitializingBean.afterPropertiesSet`, 在初始化阶段被调用
+    - `DisposableBean.destroy`, 在销毁阶段被调用
+- JSR-250
+    - `@PostConstruct`, 在初始化阶段被调用
+    - `@PreDestroy`, 在销毁阶段被调用
+- Bean额外定义的 (不建议使用)
+    - `@Bean.initMethod`
+    - `@Bean.destroyMethod` (默认检测public no-args且名为`close`或`destroy`的方法)
+- `BeanPostProcessor`, 切入到所有Bean的初始化过程
+    - `InstantiationAwareBeanPostProcessor`, 提供了额外的切入实例化过程的切点
+    - `DestructionAwareBeanPostProcessor`, 提供了额外的切入销毁过程的切点
+
+具体的，运行示例代码有如下输出
+
+```text
+postProcessBeforeInstantiation
+New
+postProcessProperties
+postProcessBeforeInitialization
+PostConstruct
+InitializingBean
+postProcessAfterInitialization
+postProcessBeforeDestruction
+PreDestroy
+DisposableBean
+```
+
+请注意，对于同一阶段的各个调用，虽然我们可以通过看源码或者写测试来得到正确的顺序，但是永远不要依赖于顺序。

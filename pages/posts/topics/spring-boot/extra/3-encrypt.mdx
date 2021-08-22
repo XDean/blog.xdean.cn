@@ -1,0 +1,147 @@
+import {postMeta} from "src/domain";
+import logo from '../spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2020-02-04'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '2-custom-condition.mdx',
+  next: '4-caching.mdx',
+  links: [
+    {
+      name: 'Custom Encrypt 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/encrypt/src/main/java/xdean/share/spring/encrypt/custom'
+    },
+    {
+      name: 'Jasypt Encrypt 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/encrypt/src/main/java/xdean/share/spring/encrypt/jasypt'
+    }
+  ]
+})
+
+# Spring Boot 番外 (03) - 敏感信息加密 Encrypt
+
+在所有的应用中，我们会需要一些配置信息，其中难免会有一些敏感信息。
+如果明文将他们放到仓库里，这些信息就会泄露。而如果我们不放在仓库里，又会给我们的部署带来麻烦。
+因此，加密敏感信息就成了必要的需求了。
+
+基于Spring Boot的容器特性，我们其实很容易切入配置文件的加载，来处理加密信息。
+
+## 自制简单的解密处理
+
+我们想要的是，把编码后的数据放到配置中，而在容器里拿到的却是解码后的内容。
+
+所以首先我们得有一条~~绝密的~~字符串`Hello World`，然后我们用~~复杂的~~BASE64算法进行编码，得到了`SGVsbG8gV29ybGQ=`。
+把它放到`application.yaml`里。为了区别于未加密的信息，我们以`base64:`开头：
+
+    data: base64:SGVsbG8gV29ybGQ=
+
+现在我们可以开始写我们的解密处理器了
+
+```java
+@AutoSpringFactories(EnvironmentPostProcessor.class)
+public class CustomEncryptProcessor implements EnvironmentPostProcessor {
+    @Override
+    public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+        HashMap<String, Object> map = new HashMap<>(); // 准备一个Map存储解密后的数据
+        for (PropertySource<?> ps : environment.getPropertySources()) { // 遍历所有的PropertySource
+            if (ps instanceof EnumerablePropertySource) { // 对于每一个可以遍历的PropertySource
+                EnumerablePropertySource eps = (EnumerablePropertySource) ps;
+                for (String name : eps.getPropertyNames()) { // 遍历所有的属性
+                    Object value = eps.getProperty(name);
+                    if (value instanceof String) { // 对于值是字符串的属性
+                        String str = (String) value;
+                        if (str.startsWith("base64:")) { // 如果以 base64: 开头
+                            String decode = new String(Base64.getDecoder().decode(str.substring(7)));
+                            map.put(name, decode); // 解码并放入Map里
+                        }
+                    }
+                }
+            }
+        }
+        PropertySource newPs = new MapPropertySource("custom-encrypt", map);
+        environment.getPropertySources().addFirst(newPs); // 将解密的数据放入环境变量，并处于第一优先级上
+    }
+}
+```
+
+<sub>*`EnvironmentPostProcessor`需要在`spring.factories`中注册，这里用了一个小工具[auto-spring-factories](https://github.com/XDean/auto-spring-factories)</sub>
+
+现在我们容器中就获得了解密的数据了，让我们来试一试获取它
+
+```java
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Autowired
+    public void init(@Value("${data}") String data) {
+        System.out.println(data);
+    }
+}
+```
+
+执行程序，你就能够看到`Hello World`了！
+
+至此，我们的简易解密处理就完成了。
+当然，我们的功能很简陋，而且其实单单BASE64也根本没有加密的效果。
+其实这种基础设施在社区中早就有成熟的开源项目了，我们不需要重复造轮子。
+下面就介绍其中最流行的工具`jasypt-spring-boot`
+
+## 开源工具 jasypt-spring-boot
+
+*这里只简单介绍基本功能，更多高级用法请参看[项目主页](https://github.com/ulisesbocchio/jasypt-spring-boot)。
+
+### 安装依赖项
+
+添加如下依赖
+
+```xml
+<dependency>
+    <groupId>com.github.ulisesbocchio</groupId>
+    <artifactId>jasypt-spring-boot-starter</artifactId>
+    <version>3.0.2</version>
+</dependency>
+```
+
+加密功能将通过Auto Configuration机制自动开启。
+
+### 加密信息
+
+默认的加密算法为`PBEWITHHMACSHA512ANDAES_256`，你可以使用任何工具生成加密信息。
+`Jasypt`提供了插件可以便捷地生成加密信息：
+
+```bash
+mvn com.github.ulisesbocchio:jasypt-maven-plugin:encrypt-value -Djasypt.encryptor.password="xdean" -Djasypt.plugin.value="Hello World"
+```
+
+其中`jasypt.encryptor.password`是你的密钥，而`jasypt.plugin.value`则是你要加密的信息明文。
+运行之后你就会得到密文`ENC(aL2TRHEJqVUACdAwL851lI/fTXHSYNgu4gJEyGjJdnEqRRFqbyOvMd6iE7Jv0R6B)`
+
+`Jasypt`通过`ENC(XXX)`来识别加密信息，如果你通过其他方式生成密文，不要忘了包裹上`ENC()`
+
+### 测试
+
+现在我们可以把加密信息放到`application.yml`中，然后运行应用。
+为了解密数据，我们唯一要做的是提供一个名为`jasypt.encryptor.password`的环境变量，即我们的密钥。
+在这里测试代码为了方便执行，直接修改`args`模拟从命令行输入。
+
+```java
+@SpringBootApplication
+public class JasyptApplication {
+    public static void main(String[] args) {
+        args = new String[]{"--jasypt.encryptor.password=xdean"}; // Mock从命令行传入
+        SpringApplication.run(JasyptApplication.class, args);
+    }
+
+    @Autowired
+    public void init(@Value("${jasypt-data}") String data) {
+        System.out.println(data);
+    }
+}
+```
+
+运行程序即可看到`Hello World`！

@@ -1,0 +1,288 @@
+import {postMeta} from "src/domain";
+import logo from './spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2019-09-05'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '3.mdx',
+  next: '5.mdx',
+  links: [
+    {
+      name: '@ComponentScan 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/componentscan'
+    }, {
+      name: '@Import 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/importoutside'
+    }, {
+      name: 'ConfigurationClassParser 源码',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/autowired'
+    }
+  ]
+})
+
+# Spring Boot (04) - Bean的发现
+
+上文讲到如何将Bean注册到容器中。整个过程看上去像是魔法一样，没有任何耦合，只是加了一个注解就完成了。
+
+其实秘密就藏在了注解里，注解包含了配置项，Spring容器解析注解从而找到你的Bean。
+
+在Spring中主要有两种方式发现你的Bean
+
+- `@ComponentScan`，自动扫描
+- `@Import`，手动依赖
+
+## `@ComponentScan`
+
+`@ComponentScan`告诉Spring容器通过类路径扫描来发现用户定义的Bean。
+你可能会想你并没有定义过这一注解，让我们点开`@SpringBootApplication`类源码，你会发现它已经包含了`@ComoponentScan`。
+
+```java
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+```
+
+@ComponentScan`主要属性有
+
+- `basePackages`，Spring会扫描所有类路径下指定包名下的所有类。默认情况下，若未指定包名，则使用注解修饰的类所在的包作为`basePackage`。
+- `basePackageClasses`，同`basePackages`，可以用类型安全的方式引入包
+- `xxxFilters`，配置过滤器，告诉Spring哪些类应当是一个Bean
+
+例如，`Application`定义在`com.github.xdean`，则只有该包以及子包里的Bean会被扫描。这也是为什么一般将`Application`定义在顶级目录。
+因此，Spring Boot的应用目录结构一般形如
+
+```treeview
+com/example/myapplication/
+|-- customer/
+|   |-- Customer.java
+|   |-- CustomerController.java
+|   |-- CustomerService.java
+|   `-- CustomerRepository.java
+|-- order/
+|   |-- Order.java
+|   |-- OrderController.java
+|   |-- OrderService.java
+|   `-- OrderRepository.java
+`-- Application.java
+```
+
+这样所有的类都能默认被扫描到。
+
+如果你的`Application`没有定义在顶层目录，此时你想要让Spring发现包外的组件，你需要额外声明`basePackages`
+
+```java
+// package xdean.share.spring.inject.outside
+@Component
+public class Outside {
+    public Outside(){
+        System.err.println("Outside construct");
+    }
+}
+
+// package xdean.share.spring.inject.componentscan
+@SpringBootApplication(
+    scanBasePackages = "xdean.share.spring.inject.outside"//HL
+)
+public class Application {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+        System.out.println(ctx.getBean(Outside.class));
+    }
+}
+```
+
+你可以尝试去掉高亮行的代码，容器初始化就会报错，因为无法找到`Outside`组件。
+
+## `@Import`
+
+对于一些外部依赖，有时我们不需要导入整个包而只想要特定组件。我们可以用`@Import`注解来直接引入一个类。
+
+```java
+// package xdean.share.spring.inject.outside
+@Component
+public class Outside {
+    public Outside(){
+        System.err.println("Outside construct");
+    }
+}
+
+// package xdean.share.spring.inject.importoutside
+@SpringBootApplication
+@Import(Outside.class)
+public class Application {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+        System.out.println(ctx.getBean(Outside.class));
+    }
+}
+```
+
+同样的，你可以尝试去掉`@Import`，则容器初始化会报错。
+
+## 关键源码
+
+### `@Component`
+
+#### `ConfigurationClassParser`
+
+280行 `doProcessConfigurationClass`
+
+```java
+// Process any @ComponentScan annotations
+Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(//HL
+        sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class); //HL
+if (!componentScans.isEmpty() &&
+        !this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
+    for (AnnotationAttributes componentScan : componentScans) {
+        // The config class is annotated with @ComponentScan -> perform the scan immediately
+        Set<BeanDefinitionHolder> scannedBeanDefinitions =
+                this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName()); //HL
+        // Check the set of scanned definitions for any further config classes and parse recursively if needed
+        for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
+            BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();
+            if (bdCand == null) {
+                bdCand = holder.getBeanDefinition();
+            }
+            if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
+                parse(bdCand.getBeanClassName(), holder.getBeanName());
+            }
+        }
+    }
+}
+```
+
+- 该类负责解析`@Configuration`的配置，其中就包括了`@ComponentScan`。
+- 首先提取类上的所有`@ComponentScan`注解
+- 对每一个注解进行遍历，提交给`componentScanParser`解析
+
+#### `ComponentScanAnnotationParser`
+
+76行
+
+```java
+public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
+    ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
+            componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
+    // 配置 nameGenerator
+    // 配置 scopedProxy
+    // 配置 resourcePattern
+    // 配置 filter
+    // 配置 lazyInit
+    // 解析 basePackages(class)
+    return scanner.doScan(StringUtils.toStringArray(basePackages));
+}
+```
+
+该类的工作主要是解析`@ComponentScan`，具体的工作代理给了`ClassPathBeanDefinitionScanner`。
+最后一行可以看到，调用`scanner`去扫描指定的包
+
+#### `ClassPathBeanDefinitionScanner`
+
+`doScan` 275行
+
+```java
+Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+```
+
+调用`findCandidateComponents`扫描候选组件。我们继续跟进到父类方法
+
+`ClassPathScanningCandidateComponentProvider#findCandidateComponents` -> 
+`ClassPathScanningCandidateComponentProvider#scanCandidateComponents` 421行
+
+```java
+String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
+    resolveBasePackage(basePackage) + '/' + this.resourcePattern; // resourcePattern = "**/*.class"
+Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath); //HL
+boolean traceEnabled = logger.isTraceEnabled();
+boolean debugEnabled = logger.isDebugEnabled();
+for (Resource resource : resources) {
+    if (traceEnabled) {
+        logger.trace("Scanning " + resource);
+    }
+    if (resource.isReadable()) {
+        try {
+            MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+            if (isCandidateComponent(metadataReader)) { //HL
+// ...
+```
+
+- Spring先是通过包名获取到了包路径下的所有的`.class`资源文件
+- 对于每个可读的class，判断是否是一个候选组件，这里就用到了`@ComponentScan`上的`filter`
+
+```java
+protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
+    for (TypeFilter tf : this.excludeFilters) {
+        if (tf.match(metadataReader, getMetadataReaderFactory())) {
+            return false;
+        }
+    }
+    for (TypeFilter tf : this.includeFilters) {
+        if (tf.match(metadataReader, getMetadataReaderFactory())) {
+            return isConditionMatch(metadataReader);
+        }
+    }
+    return false;
+}
+```
+
+其中`includeFilters`有默认
+
+```java
+protected void registerDefaultFilters() {
+    this.includeFilters.add(new AnnotationTypeFilter(Component.class));
+    ClassLoader cl = ClassPathScanningCandidateComponentProvider.class.getClassLoader();
+    try {
+        this.includeFilters.add(new AnnotationTypeFilter(
+                ((Class<? extends Annotation>) ClassUtils.forName("javax.annotation.ManagedBean", cl)), false));
+        logger.trace("JSR-250 'javax.annotation.ManagedBean' found and supported for component scanning");
+    }
+    catch (ClassNotFoundException ex) {
+        // JSR-250 1.1 API (as included in Java EE 6) not available - simply skip.
+    }
+    try {
+        this.includeFilters.add(new AnnotationTypeFilter(
+                ((Class<? extends Annotation>) ClassUtils.forName("javax.inject.Named", cl)), false));
+        logger.trace("JSR-330 'javax.inject.Named' annotation found and supported for component scanning");
+    }
+    catch (ClassNotFoundException ex) {
+        // JSR-330 API not available - simply skip.
+    }
+}
+```
+
+可以看到，除了`@Component`还有`@ManagedBean`和`@Named`也可以用于声明Bean。
+
+### `@Bean`
+
+至此，`@Component`扫描已经完毕。
+
+类似的，`@Bean`的扫描也在`ConfigurationClassParser`里，见316行
+
+```java
+// Process individual @Bean methods
+Set<MethodMetadata> beanMethods = retrieveBeanMethodMetadata(sourceClass);
+for (MethodMetadata methodMetadata : beanMethods) {
+    configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
+}
+```
+
+而`retrieveBeanMethodMetadata`方法就更加直接了
+
+```java
+private Set<MethodMetadata> retrieveBeanMethodMetadata(SourceClass sourceClass) {
+    AnnotationMetadata original = sourceClass.getMetadata();
+    Set<MethodMetadata> beanMethods = original.getAnnotatedMethods(Bean.class.getName());
+```
+
+在组件类上扫描所有`@Bean`方法，这些方法被注册为Bean。
+
+### `@Import`
+
+同样的，`@Import`的处理也在`ConfigurationClassParser`中，留给读者自己去阅读。
+
+## 小结
+
+Spring Boot通过类路径扫描来寻找组件。想要自己的组件能够自动注册，就需要保证它定义在`basePackage`下或者被`import`。

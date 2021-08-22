@@ -1,0 +1,188 @@
+import {postMeta} from "src/domain";
+import logo from '../spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2020-04-28'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '4-caching.mdx',
+  links: [
+    {
+      name: 'Async 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/async'
+    }
+  ]
+})
+
+# Spring Boot 番外 (05) - 异步 Async
+
+在Java中，异步操作通常需要自己开启线程或者管理线程池。
+
+到了Spring Boot中，通过容器的特性在上下文中提供线程池，可以做到轻松方便的异步操作。
+Spring Boot提供了`@Async`异步注解，让我们可以彻底告别过去，不需要处处和线程/线程池打交道。
+
+## Quick Start
+
+要开启异步功能，只需要添加上`@EnableAsync`注解即可。
+
+开启后，在你想要异步操作的方法加上`@Async`注解就大功告成了。
+
+```java
+@SpringBootApplication
+@EnableAsync
+public class Application {
+    // run application and call TaskService.runVoid
+}
+
+@Component
+public class TaskService {
+    @Async
+    public void runVoid(int i) {
+        System.out.printf("%s run-%d\n", Thread.currentThread(), i);
+    }
+}
+```
+
+## `@Async` 的返回值
+
+`@Async`方法返回值必须为以下几种类型之一
+
+- `void`
+- `Future<T>`
+- `CompletableFuture<T>`
+- `ListenableFuture<T>`
+
+但是你并不需要真正提交任务然后返回`Future`，只需要将你的返回值包装成`Future`。
+SpringBoot提供了一个包装类`AsyncResult`可以简便地创建返回值。
+
+```java
+    @Async
+    public Future<String> runFuture(int i) {
+        return new AsyncResult<>(i+1);
+    }
+```
+
+虽然你只是返回了一个“假的”`Future`，但是消费代码使用起来确是“真的”。
+调用方可以像平常一样正常使用返回值的所有方法。
+
+## `@Async`的执行器
+
+尝试运行上面的示例你会发现，你的任务运行在`task-x`线程中。
+这是SpringBoot默认的执行器`SimpleAsyncTaskExecutor`，它的策略非常简单，对于每一个任务新建一个线程执行。
+
+熟悉并发编程的你当然知道，这种做法效率很低，我们需要引入线程池来减少线程创建。
+方法很简单，只需要在容器中提供实现了`TaskExecutor`的Bean。
+
+SpringBoot提供了很多`TaskExecutor`的实现，我们选用最经典的`ThreadPoolTaskExecutor`线程池执行器。它底层使用了`java.util.concurrent.ThreadPoolExecutor`。
+
+```java
+    @Bean
+    public TaskExecutor executor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(500);
+        executor.setThreadNamePrefix("MyPool");
+        executor.initialize();
+        return executor;
+    }
+```
+
+现在再让我们运行程序，你就会看到任务已经运行在线程池的两条线程中。
+
+```
+Thread[MyPool2,5,main] run-1
+Thread[MyPool1,5,main] run-0
+Thread[MyPool1,5,main] runFuture-3
+Thread[MyPool2,5,main] runFuture-2
+Thread[MyPool1,5,main] runCompletableFuture-4
+Thread[MyPool2,5,main] runCompletableFuture-5
+```
+
+## 多个执行器
+
+既然引入了执行器，一种典型的场景就是就是任务分区执行。
+比方说计算密集的任务和IO密集的任务应该分开执行，以防止IO阻塞计算。
+
+我们可以在上下文中提供多个`TaskScheduler`实例，通过`@Async`注解的`value`属性来指定执行器。
+
+```java
+    @Bean
+    @Primary // 指定一个执行器为首选，这样未指定执行器的任务会使用它
+    public TaskExecutor executor() {
+        return new ConcurrentTaskExecutor();
+    }
+
+    @Bean
+    @Qualifier("io") // 指定Bean的限定词
+    public TaskExecutor ioExecutor() {
+        return new ConcurrentTaskExecutor();
+    }
+    
+    @Async
+    public void runVoid(int i) {
+        System.out.printf("%s run-%d\n", Thread.currentThread(), i);
+    }
+    
+    @Async("io") // 使用io线程池
+    public void runQualifier(int i) {
+        System.out.printf("%s runQualifier-%d\n", Thread.currentThread(), i);
+    }
+```
+
+从结果可以看到，IO任务正确的运行在了新的线程池上
+
+```
+Thread[MyPool1,5,main] run-0
+Thread[MyPool2,5,main] run-1
+Thread[pool-1-thread-1,5,main] runQualifier-8
+Thread[pool-1-thread-1,5,main] runQualifier-9
+```
+
+## 错误处理
+
+异步任务在的错误不会像同步任务一样在当前栈上抛出，自然也就不能通过try-catch来捕获。
+
+处理异步任务的错误，SpringBoot也为我们提供了接口。
+只需要在上下文提供实现了`AsyncConfigurer`的Bean就可以对异步行为进行配置，其中`getAsyncUncaughtExceptionHandler`方法用于获取错误处理器。
+
+如果没有提供，SpringBoot会使用默认的`SimpleAsyncUncaughtExceptionHandler`打印错误到日志中。
+
+```java
+    @Bean
+    public AsyncConfigurer exceptionHandler() {
+        return new AsyncConfigurer() {
+            @Override
+            public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+                return (ex, method, params) -> System.out.printf("Error: %s %s\n", method, ex);
+            }
+        };
+    }
+    
+    @Async
+    public void runError(int i) {
+        System.out.printf("%s runError-%d\n", Thread.currentThread(), i);
+        throw new IllegalArgumentException();
+    }
+```
+
+执行上面代码，会发现原先的日志不见了，取而代之的是我们打印的语句：
+
+```
+Error: public void xdean.share.spring.async.TaskService.runError(int) java.lang.IllegalArgumentException
+Error: public void xdean.share.spring.async.TaskService.runError(int) java.lang.IllegalArgumentException
+```
+
+## 小结
+
+- `@EnableAsync` 开启异步功能
+- `@Async` 方法异步执行
+    - `value`指定执行器
+- 返回值
+    - `void`
+    - `Future<T>`
+    - `CompletableFuture<T>`
+    - `ListenableFuture<T>`
+- `TaskExecutor`，提供执行器
+- `AsyncConfigurer`，提供错误处理器

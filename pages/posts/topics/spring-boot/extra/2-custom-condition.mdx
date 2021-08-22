@@ -1,0 +1,111 @@
+import {postMeta} from "src/domain";
+import logo from '../spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2019-09-12'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '1-custom-scope.mdx',
+  next: '3-encrypt.mdx',
+  links: [
+    {
+      name: 'WorldScope 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/customcondition'
+    }
+  ]
+})
+
+# Spring Boot 番外 (02) - 自定义Condition
+
+Spring Boot提供了`Condition`接口来自定义Conditional。它只有一个方法
+
+```java
+// 给定环境下，该Bean定义是否符合条件
+boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata);
+```
+
+同时，对于每个`Condition`要定义对应的注解以标记Bean需要满足该条件。
+
+这里我们依然以'世界'为例，在不同的世界里我们需要不同的Bean。
+
+首先我们实现`WorldCondition`
+
+```java
+public class WorldCondition implements Condition {
+
+    static String WORLD_ID = "The World";
+
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        // TODO 这里我们还没有定义注解，没有办法写检查条件的逻辑
+    }
+}
+```
+
+接着我们再定义对应的注解`@OnWorld`，指定`WorldCondition`为它的处理类
+
+```java
+@Target({ ElementType.TYPE, ElementType.METHOD })
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(WorldCondition.class) //HL
+public @interface OnWorld {
+    String value();
+}
+```
+
+然后我们回到`WorldCondition`中完成条件检查的逻辑
+
+```java
+@Override
+public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+    String world = metadata.getAnnotationAttributes(OnWorld.class.getName())
+                           .get("value").toString();
+    return WORLD_ID.equals(world);
+}
+```
+
+只有当前世界ID与指定的ID相同，则修饰的Bean才是有效的。
+
+最后是我们的测试代码
+
+```java
+public static void main(String[] args) {
+    ConfigurableApplicationContext ctx1 = SpringApplication.run(Application.class, args);
+    System.out.println(ctx1.getBean(BeanA.class));
+    ctx1.close();
+
+    WorldCondition.WORLD_ID = "Another World";
+
+    ConfigurableApplicationContext ctx2 = SpringApplication.run(Application.class, args);
+    System.out.println(ctx2.getBean(BeanA.class));
+}
+
+@Bean
+@OnWorld("The World")
+public static BeanA beanA1() {
+    System.out.println("The world bean construct");
+    return new BeanA();
+}
+
+@Bean
+@OnWorld("Another World")
+public static BeanA beanA2() {
+    System.out.println("Another world bean construct");
+    return new BeanA();
+}
+```
+
+我们定义了两个`BeanA`，他们作用于不同的`World`。
+我们run了两个容器，两次 World Id 不同，就会得到不同的`BeanA`。
+
+输出如下
+
+```text
+// 1
+The world bean construct
+BeanA{world='The World'}
+// 2
+Another world bean construct
+BeanA{world='Another World'}
+```

@@ -1,0 +1,128 @@
+import {postMeta} from "src/domain";
+import logo from '../spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2019-09-09'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  next: '2-custom-condition.mdx',
+  links: [
+    {
+      name: 'WorldScope 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/customscope'
+    }
+  ]
+})
+
+# Spring Boot 番外 (01) - 自定义Scope
+
+`ConfigurableBeanFactory`提供了接口來进行自定义Scope的注册
+
+```java
+/**
+ * Register the given scope, backed by the given Scope implementation.
+ * @param scopeName the scope identifier
+ * @param scope the backing Scope implementation
+ */
+void registerScope(String scopeName, Scope scope);
+```
+
+我们只需要实现`Scope`接口，注意这里的`Scope`不是注解`@Scope`。
+
+`Scope`接口有如下定义(下文中所有`上下文`均指代`作用域的上下文`)
+
+```java
+// 调用者请求从上下文中获取Bean，
+// Scope实例可以根据上下文和BeanName查找Bean，若不存在可以调用objectFactory.getBean构造
+Object get(String name, ObjectFactory<?> objectFactory);
+
+// 从上下文中移除Bean
+Object remove(String name);
+
+// 为Bean注册销毁回调
+void registerDestructionCallback(String name, Runnable callback);
+
+// 直接从上下文中通过Key获取对象，此方法相当于在容器内注册了BeanName -> Bean
+// 例如sessionScope.resolveContextualObject("session")可以获取http session对象
+Object resolveContextualObject(String key);
+
+// 获取当前上下文的Id，一般上下文都会有标识符，例如sessionScope可以返回session-id
+String getConversationId();
+```
+
+Spring附赠了一个简单实现的`SimpleThreadScope`可以作为参考。
+
+在这里我们一起来创建一个新的`WorldScope`(平行世界)，通过一个全局的世界标识符来决定当前上下文。
+
+```java
+public class WorldScope implements Scope {
+
+    public static String WORLD_ID = "The World"; // 世界标识符
+
+    // Bean的存储，<world-id, <bean-name, bean>>
+    private final Map<String, Map<String, Object>> beans = new HashMap<>(); 
+
+    @Override
+    public Object get(String name, ObjectFactory<?> objectFactory) {
+        return beans.computeIfAbsent(WORLD_ID, k -> new HashMap<>())
+                .computeIfAbsent(name, k -> objectFactory.getObject());
+    }
+
+    @Override
+    public Object remove(String name) {
+        return beans.computeIfAbsent(WORLD_ID, k -> new HashMap<>()).remove(name);
+    }
+
+    @Override
+    public void registerDestructionCallback(String name, Runnable callback) {
+    }
+
+    @Override
+    public Object resolveContextualObject(String key) {
+        return null;
+    }
+
+    @Override
+    public String getConversationId() {
+        return WORLD_ID;
+    }
+}
+```
+
+定义好了`Scope`，接着我们把它注册到容器中
+
+```java
+@Inject
+public void config(ConfigurableBeanFactory beanFactory) {
+    beanFactory.registerScope("world", new WorldScope());
+}
+```
+
+然后我们定义我们的Bean并测试我们的多世界Scope
+
+```java
+@Bean
+@Scope("world")
+public static BeanA beanA() {
+    return new BeanA();
+}
+
+public static void main(String[] args) {
+    ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+
+    System.out.println(ctx.getBean(BeanA.class));
+    WorldScope.WORLD_ID = "Another World";
+    System.out.println(ctx.getBean(BeanA.class));
+    WorldScope.WORLD_ID = "The World";
+    System.out.println(ctx.getBean(BeanA.class));
+}
+```
+
+得到输出
+
+```text
+BeanA{world='The World'}
+BeanA{world='Another World'}
+BeanA{world='The World'}
+```

@@ -1,0 +1,221 @@
+import {postMeta} from "src/domain";
+import logo from '../../spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2020-08-04'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java', 'Hibernate', 'JPA'],
+  categories: ['Coding'],
+  links: [
+    {
+      name: 'JPA Audit 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/jpa/audit'
+    }
+  ]
+})
+
+# Spring Boot JPA - Hibernate Envers
+
+虽然Spring Data JPA有默认的Auditing功能，但是功能还是相对单薄。
+
+而Hibernate Envers是Hibernate提供的完整Auditing方案，可以记录Entity的历史版本和版本信息。
+可以帮助找回丢失数据，检查修改历史以及数据分析。
+
+Hibernate Envers和Spring Data JPA无缝集成，只需要简单地加上注解就可以工作。
+
+## Quick Start
+
+首先需要添加依赖项
+
+```xml
+<dependency>
+    <groupId>org.hibernate</groupId>
+    <artifactId>hibernate-envers</artifactId>
+</dependency>
+```
+
+接着，在你的Entity类上打上`@Audited`，就大功告成了。
+现在一个最简单的审计功能已经可以正常工作
+
+```java
+@Data
+@Entity
+@Audited //HL
+@Table(name = "users")
+public class UserEntity {
+  @Id
+  @Column(name = "id")
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  int id;
+
+  @Column(name = "name")
+  String name;
+
+  @Column(name = "age")
+  int age;
+}
+```
+
+如果你开启了`spring.jpa.hibernate.ddl-auto`，则Hibernate会自动创建以下审计表
+
+- `users_AUD`， 其包含了`users`表的所有列以及额外的`REV`和`REVTYPE`列
+    - `REV`，外联向`REVINFO`表
+    - `REVTYPE`，0 = create, 1 = update, 2 = delete
+- `REVINFO`，其包含了每个版本的详细信息，默认只有`id`和`timestamp`两列，即记录了版本时间
+
+在Audit开启后，当我们通过JPA操作entity的时候，就会自动记录版本和实体。
+
+例子：
+
+```java
+@Autowired UserRepo repo;
+
+UserEntity user = new UserEntity();
+user.setName("Dean");
+user.setAge(25);
+user = repo.save(user);
+
+user.setAge(26);
+user = repo.save(user);
+
+repo.delete(user);
+```
+
+`SELECT * FROM USERS`
+
+no rows
+
+`SELECT * FROM USERS_AUD`
+
+|ID|REV|REVTYPE|AGE|NAME|
+|---|---|---|---|---|
+|1|1|0|25|Dean|
+|1|2|1|26|Dean|
+|1|3|2|null|null|
+
+`SELECT * FROM REVINFO`
+
+|REV|REVTSTMP|
+|---|---|  
+|1|1596521917324|
+|2|1596521917356|
+|3|1596521917371|
+
+## 追踪属性变化
+
+上面创建的是最简单的审计表，如果你还需要快速定位属性的修改，你可以尝试开启属性追踪。
+
+你可以在想要追踪的属性或Entity上加上`@Audited(withModifiedFlag=true)`或者
+配置参数`org.hibernate.envers.global_with_modified_flag=true`以全局启用该功能。
+
+启用的属性会在`_AUD`表中自动创建`<column>_MOD`列，其会记录属性是否在此版本中被修改。
+
+进行和上面例子同样的操作，我们会得到：
+
+`SELECT * FROM USERS_AUD`
+
+|ID|REV|REVTYPE|AGE|AGE_MOD|NAME|NAME_MOD|
+|---|---|---|---|---|---|---|
+|1|1|0|25|TRUE|Dean|TRUE|
+|1|2|1|26|TRUE|Dean|FALSE|
+|1|3|2|null|TRUE|null|TRUE|
+
+## 查询
+
+Envers提供了`AuditReader`来进行查询，你可以通过`AuditReaderFactory.get`来从一个`EntityManager`中创建`AuditReader`。
+
+创建查询：
+
+```java
+AuditQuery query = getAuditReader()
+    .createQuery()
+    .forEntitiesAtRevision(MyEntity.class, revisionNumber);
+```
+
+添加条件：
+
+```java
+query.add(AuditEntity.property("address").eq(relatedEntityInstance));
+// or
+query.add(AuditEntity.relatedId("address").eq(relatedEntityId));
+```
+
+获得结果：
+
+```java
+List personsAtAddress = getAuditReader().createQuery()
+    .forEntitiesAtRevision(Person.class, 12)
+    .addOrder(AuditEntity.property("surname").desc())
+    .add(AuditEntity.relatedId("address").eq(addressId))
+    .setFirstResult(4)
+    .setMaxResults(2)
+    .getResultList();
+```
+
+当然，我们还可以进行更多复杂的查询，从版本查实体，从实体查版本，等等，这里不一一介绍。
+
+## 自定义版本实体
+
+默认的`RevisionEntity`，即`REVINFO`表对应的实体类，只提供了时间戳这一个属性。
+这通常是不足以满足业务的，一个最为典型的场景就是需要记录是谁进行了修改。
+所以我们需要自定义`RevisionEntity`以添加`username`字段。
+
+这一自定义也非常简便，我们只需要继承`DefaultRevisionEntity`，
+然后加上`@RevisionEntity`指向自定义的`RevisionListener`即可。
+
+```java
+@Entity
+@RevisionEntity(AuthRevisionListener.class)
+@Table(name = "REVINFO")
+public class AuthRevisionEntity extends DefaultRevisionEntity {
+  @Column(name = "username")
+  private String username;
+}
+```
+
+然后在自定义的listener里设置`username`的值。
+
+```java
+@Component
+public class AuthRevisionListener implements RevisionListener {
+  public static String user = "foo";
+
+  @Override
+  public void newRevision(Object revisionEntity) {
+    AuthRevisionEntity e = (AuthRevisionEntity) revisionEntity;
+    // If you are using spring-security, you can set it as authentication
+    // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    e.setUsername(user);
+  }
+}
+```
+
+现在稍微修改我们的测试代码以模拟多用户操作
+
+```java
+UserEntity user = new UserEntity();
+user.setName("Dean");
+user.setAge(25);
+user = repo.save(user);
+
+user.setAge(26);
+user = repo.save(user);
+
+AuthRevisionListener.user = "bar"; //HL
+repo.delete(user);
+```
+
+运行测试代码，我们会看到不一样的`REVINFO`表
+
+`SELECT * FROM REVINFO`
+
+ID|TIMESTAMP|USERNAME
+---|---|---
+1|1596525766803|foo
+2|1596525766844|foo
+3|1596525766858|bar
+
+## Reference
+
+- [Hibernate Envers 4.2](https://docs.jboss.org/hibernate/orm/4.2/devguide/en-US/html/ch15.html)
+- [Hibernate Envers 5.4](https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#envers)

@@ -1,0 +1,36 @@
+import {postMeta} from "src/domain";
+import Image from 'common/components/Image'
+import rxjava from './images/rxjava.png'
+import scheduler from './images/Scheduler.png'
+import schedulerDelayError from './images/SchedulerDelayError.png'
+
+export const meta = postMeta({
+  date: new Date('2018-07-14'),
+  image: rxjava,
+  tags: ['RxJava', 'Java'],
+  categories: ['Coding'],
+  prev: '2.mdx',
+  next: '4.mdx',
+})
+
+# 理解RxJava与响应式(3) - 线程调度
+
+RxJava 为我们提供了两个调度操作符`subscribeOn`和`observeOn`.
+
+[示例代码](https://github.com/XDean/Share/blob/master/src/main/java/xdean/share/rx/ReactiveChapter3.java)
+
+## How they work
+
+<Image src={scheduler}/>
+
+## Delay error
+
+<Image src={schedulerDelayError}/>
+
+## Schedulers
+
+- `computation`
+- `io`
+- `single`
+- `newThread`
+- `trampoline`

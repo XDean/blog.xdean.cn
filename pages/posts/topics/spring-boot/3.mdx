@@ -1,0 +1,355 @@
+import {postMeta} from "src/domain";
+import logo from './spring-logo.svg'
+
+export const meta = postMeta({
+  date: new Date('2019-08-30'),
+  image: logo,
+  tags: ['Spring Boot', 'Spring', 'Java'],
+  categories: ['Coding'],
+  prev: '2.mdx',
+  next: '4.mdx',
+  links: [
+    {
+      name: '@Component 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/component'
+    }, {
+      name: '@Bean 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/bean'
+    }, {
+      name: '@Autowired 示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/spring-boot/inject/src/main/java/xdean/share/spring/inject/autowired'
+    }
+  ]
+})
+
+# Spring Boot (03) - 容器与Bean
+
+在开篇"Spring Boot是什么"一节，我们讲到Spring Boot是一个容器。
+如果你有心翻看`Spring Boot Starter`的依赖，你会发现除了包含基础设施的`spring-core`项目外，最主要的项目便是`spring-context`，直译为上下文，亦即容器。
+
+## 什么是容器，为什么需要容器
+
+即使你没有用过Spring也一定听过依赖注入/控制反转。
+在大型项目中，代码中存在千丝万缕的依赖关系，如果不能正确管理这些依赖关系，生产效率和质量都会大打折扣。例如下面这个例子
+
+```java
+public class A {
+    private B b; // A 依赖 B
+    
+    public A() {
+        b = new BImpl();
+        // OR
+        b = SomeWhere.getBInstance();
+    }
+}
+
+public interface B {
+    // ...
+}
+```
+
+A依赖于B，这看上去没什么问题，但是想象一下让你来写这段代码，问题迎面而来
+
+- 我该不该构造B
+- 如果构造，我该怎么构造
+- 如果不构造，我到哪里找到他
+
+紧接着再来想象一下让你来维护这段代码
+
+- 现在要写单元测试，怎么控制住B？
+    - 如果B是构造来的实例，大概是用反射？
+    - 如果B是静态单例
+        - 把单例的`final`去掉倒是简单，但是安全么？
+        - 或者用`power mockito`之类的字节码工具，是否太复杂了？
+- 当B的实现更新了，难道我要更新所有依赖B的代码么？
+
+无数问题将困扰开发人员，使得我们花了太多的功夫在依赖上，而占用了我们开发`A`业务逻辑的精力。
+
+只要`B`的实现类忠实地履行了接口定义地指责，所有依赖`B`的实体就不应该关心其实现和由来。所以便有了下面的模式
+
+```java
+public class A {
+    private B b;
+    
+    public A(B b) {
+        this.b = b;
+    }
+}
+```
+
+似乎没有很大的改变但是潜在转移了B的所有权，A不再对B负责，将这一职责上移。这便是控制反转/依赖注入的核心思想。
+
+那么新的问题来了，谁去构造A谁也要同时对B负责，不断地将责任往上推，最终落到谁头上呢？答案就是容器。
+
+Spring Boot作为一个顶层容器，对所有对象(Bean)负责，所有对象都可以正确地获得依赖项，从而专注于业务逻辑。
+
+Spring作为一个大大的容器帮助我们配置对象，我们要做的就只有两件事
+
+- 把对象放进容器
+- 从容器取出对象
+
+## 把Bean放进容器
+
+Spring Boot主要提供了两种方式来定义你的Bean到容器中
+
+- `@Component`
+- `@Bean`
+
+### `@Component`
+
+`@Component`用以修饰类(实体类，非接口或抽象类)，被其修饰的类会被注册为Bean。
+在Spring中，Bean默认是单例的。
+
+`@Component`只有一个属性`value`，用以定义Bean的名字。如果不设置，则Bean默认名为类名。
+
+```java
+// BeanNoName.java
+@Component //HL
+public class BeanNoName {
+    public BeanNoName() {
+        System.err.println("BeanNoName construct");
+    }
+}
+
+// BeanHasName.java
+@Component("New name") //HL
+public class BeanHasName {
+    public BeanHasName() {
+        System.err.println("BeanHasName construct");
+    }
+}
+
+// Application.java
+@SpringBootApplication //HL
+public class Application {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+
+        System.err.println(ctx.getBean(Application.class));
+        System.err.println(ctx.getBean("application"));
+        System.err.println(ctx.getBean(BeanNoName.class));
+        System.err.println(ctx.getBean("beanNoName"));
+        System.err.println(ctx.getBean(BeanHasName.class));
+        System.err.println(ctx.getBean("New Name"));
+        System.err.println(ctx.getBean("beanHasName"));
+    }
+
+    public Application() {
+        System.err.println("Application construct");
+    }
+}
+```
+
+本例中一共注册了3个Bean，`BeanNoName`, `BeanHasName`, `Application`。其中`BeanNoName`和`BeanHasName`直接被`@Component`修饰，而`Application`被元注解间接修饰`@SpringBootApplication -> @SpringBootConfiguration -> @Configuration -> @Component`。 
+
+因为我们还没有学习怎么拿到Bean，这里我们直接从Context(即容器)中Get我们的Bean。我们得到的输出是(省略SpringBoot的Log)
+
+```text
+Application construct
+BeanHasName construct
+BeanNoName construct
+xdean.share.spring.inject.component.Application$$EnhancerBySpringCGLIB$$82e5b1ec@3e44f2a5
+xdean.share.spring.inject.component.Application$$EnhancerBySpringCGLIB$$82e5b1ec@3e44f2a5
+xdean.share.spring.inject.component.BeanNoName@295cf707
+xdean.share.spring.inject.component.BeanNoName@295cf707
+xdean.share.spring.inject.component.BeanHasName@1130520d
+xdean.share.spring.inject.component.BeanHasName@1130520d
+Exception in thread "main" org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named 'beanHasName' available
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.getBeanDefinition(DefaultListableBeanFactory.java:771)
+	...
+```
+
+可以看到
+
+1. 3个Bean被依次构造
+2. 多次获取的Bean是同一个对象，的确是单例
+3. `BeanNoName`默认有名字`beanNoName`;而`BeanHasName`因为已经被命名，原有的默认名便被覆盖了
+4. `Application`被CGLIB代理了(这一问题在之后的`@Configuration`中解答)
+
+### `@Bean`
+
+`@Bean`用以修饰方法，被修饰的方法返回值即为要注册的Bean，同样的，Bean默认是单例的。
+
+需要注意的是，`@Bean`所在的类必须是已经注册的Bean。
+
+```java
+// Application.java
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+        System.out.println(ctx.getBean(String.class));
+        System.out.println(ctx.getBean("string"));
+        
+        System.out.println(ctx.getBean(int.class));
+        System.out.println(ctx.getBean("a int"));
+        
+        System.out.println(ctx.getBean(boolean.class));
+        System.out.println(ctx.getBean("bool"));
+        
+        System.out.println(ctx.getBean(double.class));
+    }
+
+    @Bean //HL
+    public String string() {
+        return "a string";
+    }
+
+    @Bean("a int") //HL
+    public int intBean() {
+        return 1024;
+    }
+}
+
+// InComponent.java
+@Component
+public class InComponent {
+    @Bean //HL
+    public boolean bool() {
+        return true;
+    }
+}
+
+// NotInComponent.java
+public class NotInComponent {
+    @Bean //HL
+    public double aDouble() {
+        return 42.0;
+    }
+}
+```
+
+输出结果为
+
+```text
+a string
+a string
+1024
+1024
+true
+true
+Exception in thread "main" org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'double' available
+```
+
+可以看到正确定义的Bean都被发现了，而`NotInComponent.aDouble`是无法被找到的。
+
+## 从容器取出Bean
+
+Spring Boot中获取Bean的方式主要是使用`@Autowired`注解。
+
+- 在Spring管理的所有Bean里，你都可以用`@Autowired`来标记以自动注入Bean。
+- 在Spring`@Bean`方法上，参数都隐含了自动注入
+
+```java
+// BeanConfiguration.java
+@Configuration
+public class BeanConfiguration {
+
+    @Bean
+    public BeanB b(BeanA a) {
+        System.out.println("Create b");
+        return new BeanB(a);
+    }
+
+    @Bean
+    public BeanA a() {
+        System.out.println("Create a");
+        return new BeanA();
+    }
+
+    @Bean
+    public BeanE e1() {
+        System.out.println("Create e1");
+        return new BeanE();
+    }
+
+    @Bean
+    public BeanE e2() {
+        System.out.println("Create e2");
+        return new BeanE();
+    }
+}
+
+// BeanConsumer.java
+@Component
+public class BeanConsumer {
+    @Autowired
+    BeanB b;
+
+    @Autowired(required = false)
+    private BeanC c;
+
+    @Autowired
+    public BeanConsumer(BeanA a) {
+        System.out.println("Construct with: " + a);
+    }
+
+    @Autowired
+    private void inject(Provider<BeanB> b, Optional<BeanD> d, List<BeanE> list, Map<String, BeanE> map) {
+        System.out.println("Inject with b provider: " + b);
+        System.out.println("Inject with b: " + b.get());
+        System.out.println("Inject with d: " + d);
+        System.out.println("Inject with list: " + list);
+        System.out.println("Inject with map: " + map);
+        System.out.println("Now b:" + b);
+        System.out.println("Now c:" + c);
+    }
+
+    @Autowired
+    public void injectFail(BeanD d) {
+        System.out.println("never happen");
+    }
+}
+```
+
+运行`Application`，得到的输出如下
+
+```text
+Create a
+Construct with: xdean.share.spring.inject.autowired.Beans$BeanA@29f7cefd
+Create b
+Create e1
+Create e2
+Inject with b provider: org.springframework.beans.factory.support.DefaultListableBeanFactory$Jsr330Factory$Jsr330Provider@78fa769e
+Inject with b: xdean.share.spring.inject.autowired.Beans$BeanB@54e041a4
+Inject with d: Optional.empty
+Inject with list: [xdean.share.spring.inject.autowired.Beans$BeanE@461ad730, xdean.share.spring.inject.autowired.Beans$BeanE@4ee203eb]
+Inject with map: {e1=xdean.share.spring.inject.autowired.Beans$BeanE@461ad730, e2=xdean.share.spring.inject.autowired.Beans$BeanE@4ee203eb}
+Now b:xdean.share.spring.inject.autowired.Beans$BeanB@24105dc5
+Now c:null
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of method injectFail in xdean.share.spring.inject.autowired.BeanConsumer required a bean of type 'xdean.share.spring.inject.autowired.Beans$BeanD' that could not be found.
+```
+
+具体的，`@Autowired`用法如下
+
+- 属性`required`
+    - 默认为`true`
+    - 如果为`true`，但容器中没有满足条件的Bean，容器会初始化失败
+- 修饰已经被管理的Bean的
+    - 构造器 Constructor
+        - 每个类可以有且仅有一个`@Autowired(required=true)`或者多个`@Autowired(required=false)`
+        - 如果只有一个构造器，则其隐含了`@Autowired`
+    - 域 Field
+    - 方法 Method
+    - 参数 Parameter
+- 注入默认通过类型识别
+    - 普通类型，寻找类型匹配的Bean
+    - `Optional<T>`，寻找T类型的Bean，即使不存在也不会报错，类似`@Autowired(required = false)`
+    - `List<T>`，寻找所有类型匹配的Bean
+    - `Map<String, T>`，寻找所有类型匹配的Bean，并通过Bean的名字映射
+    - `javax.inject.Provider<T>`，提供一个可以获取`T`的Bean
+
+## 小结
+
+- Bean的提供
+    - `@Component`
+    - `@Bean`
+- Bean的获取
+    - `@Autowired`
