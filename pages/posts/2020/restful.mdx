@@ -1,0 +1,153 @@
+import {postMeta} from "src/domain";
+import rest from './rest.png'
+
+export const meta = postMeta({
+  date: new Date('2020-08-05'),
+  image: rest,
+  tags: ['REST', 'Web'],
+  categories: ['Coding'],
+})
+
+# 理解 REST API
+
+REST这个单词想必作为开发者都不陌生。
+在“大前端时代”的今天，一旦提及前后端交互，REST总是被提起。
+但是我们却模糊了REST的概念，它更多的时候指代了以JSON为载体的WEB交互。
+这其实与REST的初衷并不相符。我们有必要重新认识REST。
+
+## 什么是REST
+
+REST全称 **RE**presentational **S**tate **T**ransfer。
+由Roy Thomas Fielding博士在2000年于其论文 _Architectural Styles and the Design of Network-based Software Architectures_ 中提出的。
+是一种分布式超媒体架构风格。
+
+### REST约束
+
+一个接口要称之为RESTful，需要满足以下约束
+
+#### 1. Client-Server
+
+即客户端服务端架构，用户界面和数据存储是分离的。
+这样我们既获得了用户界面在多端的移植性，同时也可以提高服务端的伸缩性。
+
+#### 2. Stateless
+
+客户端到服务端的所有请求必须包含了所有信息，不能够利用任何服务器存储的上下文。
+这一约束可以保证绘画状态完全由客户端控制。
+
+#### 3. Cacheable
+
+服务端对于请求的响应应当隐式或显式标记为可缓存或不可缓存。
+对于可缓存的请求，客户端可以将结果用于等效请求的响应。
+
+#### 4. Uniform Interface
+
+REST接口有着统一的规范，以简化系统架构，并提高交互的便利性。
+具体的，有以下4个约束
+
+- Identification of resources 资源标识符
+- Manipulation of resources through representations 通过“representation”来操作资源
+- Self-descriptive messages 自我描述
+- Hypermedia as the engine of application state (HATEOAS) 以超媒体作为状态引擎
+
+#### 5. Layered system
+
+系统是分层的，客户端无法知道也不需要知道与他交互的是否是真正的终端服务器。
+这也就给了系统在中间切入的可能，提高了安全性和伸缩性。
+
+#### 6. Code on demand (Optional)
+
+REST允许服务端拓展客户端，例如提供applet或者是javascript。
+
+### Resource 资源
+
+在了解了REST API的约束后，REST最关键的概念就是资源。
+任何的信息在REST架构里都被抽象为资源：图像、文档、集合、用户，等等。
+（这在某些场景是和直觉相悖的，后文会详述）
+REST通过资源标识符来和特定资源进行交互。
+
+资源在特定时间戳下的状态称之为资源表示(Resource Representation)，由数据，元数据和超链接组成。
+资源的格式由媒体类型(media type)指定。(我们熟悉的JSON即是一种方式)
+
+一个真正的REST API看上去就像是超文本一样。
+除了数据本身以外还包含了其他客户端想了解的信息以描述自己，
+比如一个典型的例子是在获取分页数据时，服务端同时还会返回页码总数以及下一页的链接。
+
+操作资源的转换无疑需要一些接口，但是注意这些接口和HTTP的method并没有直接关系。
+REST只期望这些接口由统一的规范，HTTP Method是该规范的一种实现方式。
+至于到底是用POST还是PUT来创建对象，只要统一规范，并没有强制要求。
+
+### REST小结
+
+简而言之，REST是一种架构风格，无状态，可缓存，以资源为中心，以状态转移为驱动力。
+
+## REST vs HTTP
+
+从上面的概念我们就可以知道，REST和任何具体技术无关。
+我们会认为REST就是HTTP，主要是因为HTTP是最广为流行的客户端服务端通信协议。
+但是HTTP本身和REST无关，你可以通过其他协议构建RESTful服务；
+你用HTTP构建的服务也很有可能不是RESTful的。
+
+## REST vs JSON
+
+与通信协议一样，REST与任何具体的数据格式无关。
+无论你用XML，JSON或是HTML，都可以构建REST服务。
+
+更进一步的，JSON甚至不是一种超媒体格式，只是一种数据格式。
+比如JSON并没有定义超链接发现的行为。
+真正的REST需要的是有着清楚规范的超媒体格式，比较标准的JSON-base超媒体格式有
+[JSON-LD](http://www.w3.org/TR/json-ld/) 和
+[HAL](http://stateless.co/hal_specification.html) 
+
+## HATEOAS
+
+[Richardson Maturity Model](https://martinfowler.com/articles/richardsonMaturityModel.html) 
+把REST分为4个等级，HATEOAS是REST的最高形式。
+
+它要求我们把超链接作为资源之间的驱动力。
+这样即使不加以注释，客户端也能够轻松的理解并找到下一步操作。
+
+## REST的局限性
+
+REST很好，这毫无疑问。
+如果要说它的缺陷，我认为主要有两点。
+
+### 1. 不是所有业务都可以被表示为资源
+
+这在构建REST API时是经常会碰到的，我们不能正确表示资源，所以被迫采用了其他实际。
+
+例如，一个简单的用户登入登出，如果抽象为资源可能变成了创建一个会话，
+即`POST /api/session`，这其实远不如`POST /login`来的直观。
+
+又比如，一个播放器资源，当我们要播放或停止时，一个典型的设计肯定是`POST /player/stop`，
+而如果要满足REST规范，停止这个动作将不复存在，取而代之的是`播放器状态`，API形如
+`POST /player {state:"stop"}`。
+
+以上两例都展示了，REST在某些场景下可能并不能提供良好的表现力。
+
+### 2. 你的API其实不是REST
+
+是的，REST这个单词被滥用了，这对REST自己来说就是损失。
+我们经常碰到的所谓的REST其实并不是REST，所以我们在使用这些API的时候并没有得到REST的便利。
+
+Roy Fielding博士在2008年的[一篇博客](https://roy.gbiv.com/untangled/2008/rest-apis-must-be-hypertext-driven)
+上重申
+
+> REST APIs must be hypertext-driven
+
+所以，HATEOAS可以用作判断REST的重要标准，只有当你的API是超链接驱动的，他才可能是REST。
+
+当然，我们没有必要完全遵守REST规范，如果广义的REST能够满足你的需求，那也很好。
+
+## 基于 HTTP+JSON 的类 REST API 设计
+
+正如上文说到，对于大部分场景，我们可能不需要可以追求满足REST的所有要求。
+一般而言，一个HTTP+JSON的类REST API就可以提供足够的便利。
+具体如何构建API，可以参考这篇博客：
+[RESTful API 设计指南](http://www.ruanyifeng.com/blog/2014/05/restful_api.html)
+
+## References
+
+- [Representational State Transfer](https://www.ics.uci.edu/~fielding/pubs/dissertation/fielding_dissertation.pdf)
+- [REST API Tutorial](https://restfulapi.net/)
+- [REST Service 的最佳实践](https://www.ibm.com/developerworks/cn/webservices/1101_mace_restservicePart1/1101_mace_restservicePart1.html)
