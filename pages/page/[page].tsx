@@ -22,6 +22,7 @@ export default function View(props: Props) {
 
 export const getStaticProps: GetStaticProps<Props, Params> = async ctx => {
   const metas = await getAllPostMetas()
+  metas.sort((a, b) => b.date.getTime() - a.date.getTime())
   const pageNumber = Number(ctx.params!.page);
   const pageData = getPage(metas, pageNumber, CONSTANT.pageSize)
   if (pageData === null) {
