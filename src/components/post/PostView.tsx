@@ -3,6 +3,7 @@ import {PostMeta} from "../../domain";
 import {PostHeader} from "./PostHeader";
 import {Toc} from "./Toc";
 import Head from "next/head";
+import clsx from "clsx";
 
 type Props = PropsWithChildren<{
   meta: PostMeta
@@ -16,12 +17,15 @@ export const PostView = (props: Props) => {
         <title>{meta.title} | XDean的博客</title>
       </Head>
       {meta.tocData && (
-        <Toc toc={meta.tocData}
-             className={'hidden md:block float-left sticky border-r mr-4 pr-4 top-48 min-w-32 max-w-56'}
-        />
+        <div
+          className={clsx('hidden md:block float-left sticky top-32',
+            'border-r mr-4 pr-4 min-w-xl max-w-4xl max-h-[80vh] overflow-y-auto',
+          'scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-0')}>
+          <Toc toc={meta.tocData}/>
+        </div>
       )}
       <article className={'overflow-y-hidden'}>
-        <div className={'sticky top-0'}>
+        <div className={'mb-4'}>
           <PostHeader meta={meta}/>
         </div>
         <div className={'markdown-body'}>

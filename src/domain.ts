@@ -10,6 +10,10 @@ export type PostMetaInline = {
   prev?: string
   next?: string
   toc?: boolean
+  code?: {
+    name: string
+    link: string
+  }[]
 }
 
 export type TocItem = {

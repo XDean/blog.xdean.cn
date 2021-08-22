@@ -1,0 +1,109 @@
+import {postMeta} from "src/domain";
+
+export const meta = postMeta({
+  date: new Date('2019-09-02'),
+  tags: ['Encrypt'],
+  categories: ['Coding', 'Golang'],
+  code: [
+    {
+      name: '源码',
+      link: 'https://github.com/XDean/goex/blob/master/xconfig/encrypt.go'
+    },
+    {
+      name: '示例',
+      link: 'https://github.com/XDean/Share/tree/master/src/go/config/enc'
+    }
+  ]
+})
+
+
+# Go - 配置文件加密
+
+任何应用都不可避免地要使用配置文件，而一些配置信息包含敏感信息，如果明文放在配置文件中上传到远程仓库里显然是不合适地。
+
+一种做法是在仓库里不记录敏感信息，而在生产环境下单独配置。这样虽然保护了信息但是会变得非常麻烦，换一个环境又要重新配置。
+
+而我的做法是直接在配置文件中加密，通过一个统一密钥来管理所有的敏感信息。
+
+## 例子
+
+我们有如下配置项
+
+```yaml
+wechat:
+  user: XDean
+  app-id: my-appid
+  app-secret: my-secret-id
+admin:
+  username: XDean
+  password: my-password
+```
+
+对应的我们有
+
+```go
+type Config struct {
+	Wechat struct {
+		User      string `yaml:"user"`
+		AppId     string `yaml:"app-id"`
+		AppSecret string `yaml:"app-secret"`
+	} `yaml:"wechat"`
+
+	Admin struct {
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"admin"`
+}
+```
+
+其中`app-id`, `app-secret`, `password`都是敏感信息。
+
+## 加密
+
+导入`xconfig`
+
+```go
+import "github.com/xdean/goex/xconfig
+```
+
+用`xconfig.EncryptString`来加密我们的信息，其接收两个参数
+
+- 待加密信息
+- 密钥
+
+```go
+fmt.Println(xconfig.EncryptString("my-appid", "123456"))
+```
+
+## 替换
+
+用生成的密文替换明文信息
+
+```yaml
+wechat:
+  user: XDean
+  app-id: ENC~GtBlP0j50TWm3+G3gB+4jjH3NcbGI5HIh2C0FD4H1lkumjMX
+  app-secret: ENC~2cJ5xtNNQDW1Vm39deMzGttXNV1rMNbpPXXMC0p35nAZU9CglnOx2w==
+admin:
+  username: XDean
+  password: ENC~upbs5xX+jwYyVKolYkoysvqo3h6pyjYM+Pf/L6//GeuPV+kSAoYu  
+```
+
+## 解密
+
+在代码读取配置文件后进行解密
+
+```go
+// 只做示例故不处理error
+file, _ := os.Open("config.yaml")
+decoder := yaml.NewDecoder(file)
+config := new(Config)
+_ = decoder.Decode(config)
+//解密，生产环境中密钥应从外部配置中来，如命令行参数或者环境变量 //HL
+_ = xconfig.Decode(config, "123456")  //HL
+// 现在你的config对象已经解密
+```
+
+## 原理
+
+原理很简单，循环遍历struct的所有field，解密所有`ENC~`开头的字符串。详见源码。
