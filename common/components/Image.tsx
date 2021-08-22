@@ -1,8 +1,9 @@
 import NextImage, {ImageProps} from 'next/image'
 
-type Props = Omit<ImageProps, 'width' | 'height'> & {
+type Props = Omit<ImageProps, 'width' | 'height' | 'src'> & {
   maxWidth?: number | string
   width?: number | string
+  src: Exclude<ImageProps['src'], string>
 }
 
 export const Image = (props: Props) => {

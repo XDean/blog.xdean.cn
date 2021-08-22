@@ -3,7 +3,7 @@ import {ImageProps} from 'next/image'
 export type PostMetaInline = {
   title?: string
   summary?: string
-  image?: ImageProps['src']
+  image?: Exclude<ImageProps['src'], string>
   date: Date
   categories: string[]
   tags: string[]

@@ -40,8 +40,14 @@ export const PostCard = (props: Props) => {
         )}
       </div>
       {meta.image && (
-        <div className={'w-4/12 items-center justify-center hidden md:flex'}>
-          <Image src={meta.image} maxWidth={'100%'} width={'100%'}/>
+        <div className={'w-4/12 items-center justify-center hidden md:flex overflow-hidden'}>
+          <Image src={meta.image}
+                 className={'w-full h-full relative'}
+                 maxWidth={'100%'}
+                 width={'100%'}
+                 objectFit={'contain'}
+                 layout={'fill'}
+          />
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import {PostMeta} from "src/domain";
 import {Page} from "common/util/page";
 import {PostCard} from "./PostCard";
 import {Pagination} from "../../../common/components/Pagination";
-import Head  from "next/head";
+import Head from "next/head";
 
 type Props = {
   page: Page<PostMeta>
@@ -18,7 +18,7 @@ export const PostPageView = (props: Props) => {
         <PostCard meta={e} key={e.link}/>
       ))}
       <div className={'mt-2'}>
-        <Pagination totalPage={page.total} pageLink={p => `/page/${p + 1}`}/>
+        <Pagination totalPage={page.total} page={page.page - 1} pageLink={p => `/page/${p + 1}`}/>
       </div>
     </div>
   )

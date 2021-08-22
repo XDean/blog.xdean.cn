@@ -16,10 +16,13 @@ export const meta = postMeta({
 # 理解RxJava与响应式(3) - 线程调度
 
 RxJava 为我们提供了两个调度操作符`subscribeOn`和`observeOn`.
+它们分别可以在订阅(subscribe)阶段和观察(observe)阶段进行线程的调度。
 
 [示例代码](https://github.com/XDean/Share/blob/master/src/main/java/xdean/share/rx/ReactiveChapter3.java)
 
 ## How they work
+
+下图展示了两种调度如何工作，线条的颜色标识了它们所处的线程。
 
 <Image src={scheduler}/>
 

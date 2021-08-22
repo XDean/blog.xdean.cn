@@ -43,12 +43,6 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
       meta.summary = meta.summary.substring(0, idx)
     }
   }
-  if (!meta.image) {
-    const imageNode = root.querySelector('img')
-    if (imageNode !== null) {
-      meta.image = imageNode.src
-    }
-  }
   if (meta.toc !== false) {
     const headers = root.querySelectorAll('h2,h3,h4')
     const toc: TocItem[] = []
