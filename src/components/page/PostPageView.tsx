@@ -10,7 +10,7 @@ type Props = {
 export const PostPageView = (props: Props) => {
   const {page} = props
   return (
-    <div className={'flex flex-col items-center w-full max-w-screen-lg mx-auto'}>
+    <div className={'flex flex-col items-center w-full max-w-screen-lg mx-auto px-4 md:px-8'}>
       <Head>
         <title>{page.page === 1 ? '首页' : `第${page.page}页`} | XDean的博客</title>
       </Head>
