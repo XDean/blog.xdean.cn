@@ -1,0 +1,139 @@
+import {postMeta} from "src/domain";
+import logo from '../logo.png'
+import question from './question.png'
+import answer2 from './answer-2.png'
+import Image from 'common/components/Image'
+
+export const meta = postMeta({
+  date: new Date('2021-08-18'),
+  image: logo,
+  tags: ['StackOverflow', 'Typescript'],
+  categories: ['Coding'],
+  toc: false,
+})
+
+# [SO] Typescript - 整型Range类型
+
+## 问题
+
+<Image src={question} maxWidth={1000} className={'border'}/>
+
+[原题链接][question]
+
+原问题很简单，如何在Typescript中定义一个联合特定范围数字的整型类型。
+
+Accepted Answer给出的答案是：
+
+> No it's not possible. That kind of precise type constraint is not available in typescript (yet?)
+
+Only runtime checks/assertions can achieve that :(
+
+然而，该问题创建于2016年9月14日，当时Typescript v2.0版本尚未发布(9月22日)。
+
+这一需求在2017就有[Issue][Github Issue]在讨论，到今天依然是Open状态，或许在未来的某个版本会得到原生支持。
+
+时至今日，Typescript v4.3已经发布了。那么利用Typescript的新特性能否完成这个功能呢？
+就让我们来尝试一下。
+
+## 趣事
+
+解题之前，说个搞笑的事情。
+
+在这个问题提出并接受了答案的半年之后。
+一位老兄给出了一个显然没有仔细审题也没有思考的答案。
+
+<Image src={answer2} maxWidth={1000} className={'border'}/>
+
+当然，这可以正常工作。但是对于题主的需求，显然不会有人想在代码里硬编码从0到255。
+题主也在题目中说明了他不想写下256个数字。
+
+然而，这样一个显然不符合题设的回答居然获得81个Upvote，甚至超过了被接受答案的48票。
+同时，因为这显然是错误答案，他也收获了11个Downvote。
+
+该回答的评论中点破答主没有好好审题的老哥，通过一句简单的引用得到了76个Upvote，成为了这一页当中总分最高的选手🤣
+
+## 求解
+
+我们最终要得到的一个类型
+
+```typescript
+type Range<T extends number> = ?
+```
+
+在Typescript中，整型字面量可以作为类型使用。但是却不能进行运算。
+唯一可以进行的运算就是等于操作，可以利用`extends`条件类型
+
+```typescript
+type Equals<A extends number, B extends number> = A extends B? true: false
+type T1 = Equals<2, 2> // true
+type T2 = Equals<2, 3> // false
+```
+
+所以问题的关键是，通过`T`衍生出其他狮子。即给定整形字面量类型`A`，如何得到`A+1`或`A-1`。
+
+我的思路是通过元组长度，元组类型的`length`属性会得到它的长度，这个长度是一个准确的整型字面量类型。
+
+```typescript
+type A = [1, 2, 3]
+type B = A['length'] // 3
+```
+
+而新的问题就是，如何得到一个长度为`T`的元组类型？
+
+我们可以通过递归条件类型，从一个空数组开始构造
+
+```typescript
+type _Tuple<N extends number, T extends unknown[]> = N extends T['length'] ? T : _Tuple<N, [...T, N]>
+type Tuple<N extends number> = _Tuple<N, []>
+type T1 = Tuple<5> // [5, 5, 5, 5, 5]
+```
+
+对于长度`N`和元组`T`，如果长度满足则返回`T`，否则给`T`加一个元素并重新判断。
+考虑到我们总是从空数组`[]`开始，所以提炼了一个助手类型`_Tuple`。
+
+有了这个思路，我们可以依葫芦画瓢，就得到类似的`Plus1`和`Sub1`类型：
+
+```typescript
+type _Plus1<N extends number, T extends unknown[]> = N extends T['length'] ? [...T, N]['length'] : _Plus1<N, [...T, N]>
+type Plus1<N extends number> = _Plus1<N, []>
+type T2 = Plus1<5> // 6
+
+type _Sub1<N extends number, T extends unknown[]> = N extends T['length'] ?
+    (T extends [...(infer S), unknown] ? S['length'] : never)
+    : _Sub1<N, [...T, N]>
+type Sub1<N extends number> = _Sub1<N, []>
+type T3 = Sub1<5> // 4
+```
+
+现在我们有了加法和减法两种方式，它们都可以得到最终结果，只需要在递归时联合类型即可
+
+```typescript
+type _PlusRan<N extends number, T extends unknown[]> = N extends T['length'] ? never : T['length'] | _PlusRan<N, [...T, N]>
+type PlusRan<N extends number> = _PlusRan<N, []>
+
+type T4 = PlusRan<5> // 0 | 1 | 2 | 3 | 4
+
+type _SubRan<N extends number, T extends unknown[]> = N extends T['length'] ?
+    (T extends [...(infer S), unknown] ? S['length'] : never)
+    : T['length'] | _SubRan<N, [...T, N]>
+type SubRan<N extends number> = _SubRan<N, []>
+
+type T5 = SubRan<5> // 0 | 1 | 2 | 3 | 4
+```
+
+这样就是该问题的解答了。
+
+但是由于递归层数的限制，这个类型不能处理很大的数字，例如题目中的256。
+在v4.3.5的环境下，最多只能递归到22。即`Ran<23>`就会报错。
+
+[Typescript Playground链接在此][playground]
+
+在这个解法的基础上进行了一些简化和保护，就得到了[我的答案][my]
+
+另外，比我早一年，有一个网友也给出了[类似的解法][another]。他使用了方法入参进行推导，和元组异曲同工。
+
+[question]: https://stackoverflow.com/questions/39494689
+[Github Issue]:  https://github.com/Microsoft/TypeScript/issues/15480
+[playground]: https://www.typescriptlang.org/play?jsx=0&allowSyntheticDefaultImports=true&ts=4.3.5#code/C4TwDgpgBA+gKgVzAGwgHgHJQgD2BAOwBMBnKAhAWwCMIAnAGijmz0NKgQIGsCB7AO4EA2gF0AfFAC8ULLnzEycYQHJUBAObAAFitFQA-MygAuWIhToMTYQDp7cJhgkAoUJGZJUmVgo4UaekkZeC8rG1d3aDgARmlPSzQAVkkAelSoYSSmbKhc-NEXN3BoGAAFZAQSGJ95djIA2kZjOsVOHn4hMWDZX3rmVXUtXX0jOwcnUUHCYb1TWAqqmutM+1tHWUiSqEXq2rY2xqD48sq9le6iqOYAJnjdmpSodKgANivtmABlBGplvsOVCaTBYrQ4XF4ghEEnicgOHGUahmOjmBhcUAxUAAFKD4WRxrYsQBLAgAM3oUC+AEomBDOgRRpTppoUfozAQIAA3ehU9GYszfX7LGxrDbOcTFDw-P77PwNIHHELS4WZVyS6IAZniyuSaQyABYPh5TlUAEoAQwIsv6R2auLl7UhXRhMjhDsRQ1ZhnIXIpZg9yJGUAAPgszharRdRZMJdddhHrYDAnQeiaSAmLmrrnB9fdw5bdc8MgAGENQOKhu6hrWhw3q2DSjMA-wKu3Nsh0qHdWHtgZIllBtGY7H2-oE4lkinU2kdKGMr7M2Zsn3cui84f+xde0OC6gZkUTTax7aNgtum2t1OnyMRCX1uBJbW-BNPF6l0MVqBVqA1qB17OvE+e4FjcNzHh4cAAOxAQmNwauIQA
+[my]: https://stackoverflow.com/a/63918062/7803527
+[another]: https://stackoverflow.com/a/63918062/7803527

@@ -1,4 +1,5 @@
 import NextImage, {ImageProps} from 'next/image'
+import clsx from "clsx";
 
 type Props = Omit<ImageProps, 'width' | 'height' | 'src'> & {
   maxWidth?: number | string
@@ -14,7 +15,7 @@ export const Image = (props: Props) => {
     ...rest
   } = props
   return (
-    <div style={{maxWidth: maxWidth, width: width}} className={className}>
+    <div style={{maxWidth: maxWidth, width: width}} className={clsx('image-wrapper', className)}>
       <NextImage layout={"responsive"} {...rest}/>
     </div>
   )
