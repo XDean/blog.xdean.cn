@@ -11,7 +11,7 @@
 }
 
 .markdown-body pre {
-    @apply max-w-full lg:max-w-[80%];
+    @apply w-full;
 }
 
 .markdown-body h1:first-child {
