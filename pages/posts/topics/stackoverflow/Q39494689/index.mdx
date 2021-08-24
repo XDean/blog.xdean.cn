@@ -24,9 +24,8 @@ export const meta = postMeta({
 
 Accepted Answer给出的答案是：
 
-> No it's not possible. That kind of precise type constraint is not available in typescript (yet?)
-
-Only runtime checks/assertions can achieve that :(
+> No it's not possible. That kind of precise type constraint is not available in typescript (yet?) <br/>
+> Only runtime checks/assertions can achieve that :(
 
 然而，该问题创建于2016年9月14日，当时Typescript v2.0版本尚未发布(9月22日)。
 
@@ -69,7 +68,7 @@ type T1 = Equals<2, 2> // true
 type T2 = Equals<2, 3> // false
 ```
 
-所以问题的关键是，通过`T`衍生出其他狮子。即给定整形字面量类型`A`，如何得到`A+1`或`A-1`。
+所以问题的关键是，如何通过`T`衍生出其他数字？即给定整形字面量类型`A`，如何得到`A+1`或`A-1`。
 
 我的思路是通过元组长度，元组类型的`length`属性会得到它的长度，这个长度是一个准确的整型字面量类型。
 
@@ -105,20 +104,13 @@ type Sub1<N extends number> = _Sub1<N, []>
 type T3 = Sub1<5> // 4
 ```
 
-现在我们有了加法和减法两种方式，它们都可以得到最终结果，只需要在递归时联合类型即可
+现在我们有了加减法，通过它们就可以得到最终结果，只需要在递归时联合类型即可
 
 ```typescript
-type _PlusRan<N extends number, T extends unknown[]> = N extends T['length'] ? never : T['length'] | _PlusRan<N, [...T, N]>
-type PlusRan<N extends number> = _PlusRan<N, []>
+type _Ran<N extends number, T extends unknown[]> = N extends T['length'] ? never : T['length'] | _Ran<N, [...T, N]>
+type Ran<N extends number> = _Ran<N, []>
 
-type T4 = PlusRan<5> // 0 | 1 | 2 | 3 | 4
-
-type _SubRan<N extends number, T extends unknown[]> = N extends T['length'] ?
-    (T extends [...(infer S), unknown] ? S['length'] : never)
-    : T['length'] | _SubRan<N, [...T, N]>
-type SubRan<N extends number> = _SubRan<N, []>
-
-type T5 = SubRan<5> // 0 | 1 | 2 | 3 | 4
+type T4 = Ran<5> // 0 | 1 | 2 | 3 | 4
 ```
 
 这样就是该问题的解答了。
@@ -134,6 +126,6 @@ type T5 = SubRan<5> // 0 | 1 | 2 | 3 | 4
 
 [question]: https://stackoverflow.com/questions/39494689
 [Github Issue]:  https://github.com/Microsoft/TypeScript/issues/15480
-[playground]: https://www.typescriptlang.org/play?jsx=0&allowSyntheticDefaultImports=true&ts=4.3.5#code/C4TwDgpgBA+gKgVzAGwgHgHJQgD2BAOwBMBnKAhAWwCMIAnAGijmz0NKgQIGsCB7AO4EA2gF0AfFAC8ULLnzEycYQHJUBAObAAFitFQA-MygAuWIhToMTYQDp7cJhgkAoUJGZJUmVgo4UaekkZeC8rG1d3aDgARmlPSzQAVkkAelSoYSSmbKhc-NEXN3BoGAAFZAQSGJ95djIA2kZjOsVOHn4hMWDZX3rmVXUtXX0jOwcnUUHCYb1TWAqqmutM+1tHWUiSqEXq2rY2xqD48sq9le6iqOYAJnjdmpSodKgANivtmABlBGplvsOVCaTBYrQ4XF4ghEEnicgOHGUahmOjmBhcUAxUAAFKD4WRxrYsQBLAgAM3oUC+AEomBDOgRRpTppoUfozAQIAA3ehU9GYszfX7LGxrDbOcTFDw-P77PwNIHHELS4WZVyS6IAZniyuSaQyABYPh5TlUAEoAQwIsv6R2auLl7UhXRhMjhDsRQ1ZhnIXIpZg9yJGUAAPgszharRdRZMJdddhHrYDAnQeiaSAmLmrrnB9fdw5bdc8MgAGENQOKhu6hrWhw3q2DSjMA-wKu3Nsh0qHdWHtgZIllBtGY7H2-oE4lkinU2kdKGMr7M2Zsn3cui84f+xde0OC6gZkUTTax7aNgtum2t1OnyMRCX1uBJbW-BNPF6l0MVqBVqA1qB17OvE+e4FjcNzHh4cAAOxAQmNwauIQA
+[playground]: https://www.typescriptlang.org/play?jsx=0&allowSyntheticDefaultImports=true&ts=4.3.5#code/C4TwDgpgBA+gKgVzAGwgHgHJQgD2BAOwBMBnKAhAWwCMIAnAGijmz0NKgQIGsCB7AO4EA2gF0AfFAC8ULLnzEycYQHJUBAObAAFitFQA-MygAuWIhToMTYQDp7cJhgkAoUJGZJUmVgo4UaekkZeC8rG1d3aDgARmlPSzQAVkkAelSoYSSmbKhc-NEXN3BoGAAFZAQSGJ95djIA2kZjOsVOHn4hMWDZX3rmVXUtXX0jOwcnUUHCYb1TWAqqmutM+1tHWUiSqEXq2rY2xqD48sq9le6iqOYAJnjdmpSodKgANivtmABlBGplvsOVCaTBYrQ4XF4ghEEnicgOHGUahmOjmBhcUAxUAAFKD4WRxrYsQBLAgAM3oUC+AEomBDOgRRpTppoUfozAQIAA3ehU9GYszfX7LGxrDbOcTFDw-P77PwNIHHELS4WZVyS6IAZniyuSaQyABYPh4YAAlACGBFl-SOzVxcvakK6MJkcPtiKGrMM5C5FLM7uRIygAB9YObLRdRZMJdcw1bAYE6D1TRbMBEJermPr4rGni8AAzBqBxEN3ENakOGjNwJLZlM3G7R7ZwV61y03DXiIA
 [my]: https://stackoverflow.com/a/63918062/7803527
 [another]: https://stackoverflow.com/a/63918062/7803527
