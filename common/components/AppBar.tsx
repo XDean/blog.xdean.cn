@@ -1,6 +1,7 @@
-import {ReactNode} from "react";
+import React, {ReactNode} from "react";
 import {XDeanIcon} from "./XDeanIcon";
 import {GithubIcon} from "./GithubIcon";
+import Link from "next/link";
 
 
 type Props = {
@@ -16,9 +17,11 @@ export const AppBar = (props: Props) => {
       <div className={'flex flex-row items-center justify-center'}>
         {icon}
       </div>
-      <div className={'ml-2 text-3xl md:text-4xl'}>
-        {title}
-      </div>
+      <Link href={'/'}>
+        <a className={'ml-2 text-3xl md:text-4xl link'}>
+          {title}
+        </a>
+      </Link>
       <div className={'flex-grow w-0'}/>
       <div className={'flex-row items-center flex space-x-2'}>
         <XDeanIcon/>
