@@ -7,6 +7,7 @@ import React from "react";
 import {JSDOM} from 'jsdom'
 import {CONSTANT} from "./constants";
 import {slash} from "common/util/path";
+import {getPage} from "../common/util/page";
 
 const postsDirectory = path.join(process.cwd(), "pages/posts")
 
@@ -63,6 +64,12 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
 export async function getAllPostMetas() {
   const slugs = await getAllPostFilePaths()
   return await Promise.all(slugs.map(slug => getPostMetaByFilePath(slug)))
+}
+
+export async function getPostByPage(page: number) {
+  const metas = await getAllPostMetas()
+  metas.sort((a, b) => b.date.getTime() - a.date.getTime())
+  return getPage(metas, page, CONSTANT.pageSize)
 }
 
 function fileToUrl(p: string) {

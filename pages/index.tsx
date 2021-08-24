@@ -1,8 +1,24 @@
 import {GetStaticProps} from 'next'
-import View, {getStaticPropsShared} from './page/[page]'
+import {PostMeta} from "src/domain";
+import {getPostByPage} from "src/api";
+import {Page} from 'common/util/page'
+import {PostPageView} from "../src/components/page/PostPageView";
 
-export default View
+type Props = {
+  data: Page<PostMeta>
+}
 
-export const getStaticProps: GetStaticProps = async () => {
-  return await getStaticPropsShared(1)
+export default function View(props: Props) {
+  return (
+    <PostPageView page={props.data}/>
+  )
+}
+
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  const data = await getPostByPage(1)
+  return {
+    props: {
+      data
+    }
+  }
 }

@@ -6,12 +6,12 @@ export type Page<T> = {
   data: T[]
 }
 
-export function getPage<T>(arr: T[], page: number, size: number): Page<T> | null {
+export function getPage<T>(arr: T[], page: number, size: number): Page<T> {
   const maxPage = Math.ceil(arr.length / size)
-  if (isNaN(page) || page < 1 || page > maxPage) {
-    return null
+  let data:T[] = []
+  if (!(isNaN(page) || page < 1 || page > maxPage)) {
+    data = arr.slice((page - 1) * size, Math.min(page * size, arr.length))
   }
-  const data = arr.slice((page - 1) * size, Math.min(page * size, arr.length))
   return {
     page: page,
     total: maxPage,

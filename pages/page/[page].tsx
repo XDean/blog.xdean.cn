@@ -1,10 +1,10 @@
-import {GetStaticPaths, GetStaticProps, GetStaticPropsResult} from 'next'
+import {GetStaticPaths, GetStaticProps} from 'next'
 import {PostMeta} from "src/domain";
 import {PostPageView} from "src/components/page/PostPageView";
-import {getAllPostMetas} from "src/api";
+import {getAllPostMetas, getPostByPage} from "src/api";
 import {CONSTANT} from "src/constants";
 import {range} from "common/util/array";
-import {getPage, Page} from 'common/util/page'
+import {Page} from 'common/util/page'
 
 type Props = {
   data: Page<PostMeta>
@@ -22,22 +22,11 @@ export default function View(props: Props) {
 
 export const getStaticProps: GetStaticProps<Props, Params> = async ctx => {
   const pageNumber = Number(ctx.params!.page);
-  return await getStaticPropsShared(pageNumber)
-}
-
-export async function getStaticPropsShared(page: number): Promise<GetStaticPropsResult<Props>> {
-  const metas = await getAllPostMetas()
-  metas.sort((a, b) => b.date.getTime() - a.date.getTime())
-  const pageData = getPage(metas, page, CONSTANT.pageSize)
-  if (pageData === null) {
-    return {
-      notFound: true
-    }
-  }
+  const data = await getPostByPage(pageNumber)
   return {
     props: {
-      data: pageData
-    },
+      data
+    }
   }
 }
 
