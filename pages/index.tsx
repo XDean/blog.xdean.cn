@@ -1,14 +1,8 @@
 import {GetStaticProps} from 'next'
+import View, {getStaticPropsShared} from './page/[page]'
 
-export default function Page(){
-  return null
-}
+export default View
 
 export const getStaticProps: GetStaticProps = async () => {
-  return {
-    redirect: {
-      statusCode: 303,
-      destination: '/page/1',
-    },
-  }
+  return await getStaticPropsShared(1)
 }
