@@ -1,6 +1,8 @@
 import Link from "next/link";
 import React from "react";
 import {PostMeta} from "../../domain";
+import {Utterances} from 'utterances-react-component'
+import {CONSTANT} from "../../constants";
 
 type Props = {
   meta: PostMeta
@@ -25,6 +27,10 @@ export const PostFooter = (props: Props) => {
           </Link>
         )}
       </div>
+      <Utterances repo={CONSTANT.commentRepo as `${string}/${string}`}
+                  issueTerm={'pathname'}
+                  theme={'github-light'}
+      />
     </div>
   )
 }
