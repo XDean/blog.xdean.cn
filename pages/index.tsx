@@ -1,6 +1,6 @@
 import {GetStaticProps} from 'next'
 import {PostMeta} from "src/domain";
-import {getPostByPage} from "src/api";
+import {getPostByPage} from "src/service";
 import {Page} from 'common/util/page'
 import {PostPageView} from "../src/components/page/PostPageView";
 
