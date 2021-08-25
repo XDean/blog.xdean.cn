@@ -20,7 +20,7 @@ export const Like = (props: Props) => {
          title={like ? '取消喜欢' : '喜欢'}
     >
       <FontAwesomeIcon icon={like ? fasHeart : farHeart} className={'text-red-600'}/>
-      <div className={'ml-2 font-mono'}>
+      <div className={'ml-2'}>
         {total}
       </div>
     </div>
