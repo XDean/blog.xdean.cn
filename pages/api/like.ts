@@ -9,15 +9,14 @@ export default apiHandler({
     GET: async ({helper}) => {
       const postId = helper.museQuery('postId')
       const userId = helper.getUserId()
-      const sql = `SELECT COUNT(*) AS total, SUM(user_id = ?) AS you 
+      const sql = `SELECT COUNT(*) AS total, IFNULL(SUM(user_id = ?), 0) AS you 
       FROM xdean.blog_post_like 
       WHERE post_id = ?`;
-      console.log(sql, postId, userId)
       const result = await database.query<{ total: number, you: number }[]>(sql, [userId, postId])
       if (result.length === 0) {
         return {
           total: 0,
-          you: false,
+          you: 0,
         }
       }
       return result[0]
