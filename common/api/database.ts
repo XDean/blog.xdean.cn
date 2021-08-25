@@ -7,5 +7,5 @@ export const database = mysql({
     database: process.env.MYSQL_DATABASE,
     user: process.env.MYSQL_USERNAME,
     password: process.env.MYSQL_PASSWORD,
-  }
+  },
 })
