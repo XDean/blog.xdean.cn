@@ -2,7 +2,7 @@ const path = require('path')
 
 module.exports = async function (src) {
   const postPath = path.relative(path.join(this.rootContext, 'pages/posts'), this.resourcePath)
-  return `import {getPostMetaByFilePath} from "src/api";
+  return `import {getPostMetaByFilePath} from "src/service";
 import * as path from "path"
 
 ${src}
