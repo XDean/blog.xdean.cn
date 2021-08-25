@@ -12,6 +12,7 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.35",
     "@fortawesome/free-brands-svg-icons": "^5.15.3",
     "@fortawesome/free-solid-svg-icons": "^5.15.3",
+    "@fortawesome/free-regular-svg-icons": "^5.15.3",
     "@fortawesome/react-fontawesome": "^0.1.14",
     "@mapbox/rehype-prism": "^0.6.0",
     "@types/cookie": "^0.4.1",
@@ -30,6 +31,7 @@
     "remark-math": "^3.0.1",
     "serverless-mysql": "^1.5.4",
     "superjson": "^1.7.5",
+    "swr": "^0.5.6",
     "utterances-react-component": "^1.0.0"
   },
   "devDependencies": {
