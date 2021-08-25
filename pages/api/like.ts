@@ -1,18 +1,26 @@
-import type {NextApiRequest, NextApiResponse} from 'next'
-import {default as connect} from 'serverless-mysql'
+import {apiHandler} from "common/api/util";
+import {randomInt} from "crypto";
+import {database} from "common/api/database";
 
-const mysql = connect({
-  config: {
-    host: process.env.MYSQL_HOST,
-    port: Number(process.env.MYSQL_PORT),
-    database: process.env.MYSQL_DATABASE,
-    user: process.env.MYSQL_USERNAME,
-    password: process.env.MYSQL_PASSWORD,
+
+export default apiHandler({
+  handler: {
+    GET: async ({helper, req}) => {
+      const postId = helper.museQuery('postId')
+      const userId = req.cookies['userId']
+      if (!userId) {
+        const uuid = randomInt(2 << 30 - 1)
+        helper.setCookie('userId', uuid)
+      }
+      const sql = `SELECT COUNT(*) AS total, SUM(user_id = ${userId}) AS you FROM blog_post_like WHERE post_id = ${postId}`;
+      const result = await database.query<{ total: number, you: number }[]>(sql)
+      if (result.length === 0) {
+        return {
+          total: 0,
+          you: false,
+        }
+      }
+      return result[0]
+    }
   }
 })
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const id = req.query.id
-  const result = await mysql.query(`SELECT ${id}`)
-  console.log(result)
-  return res.status(200).json(result)
-}
