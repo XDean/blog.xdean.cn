@@ -323,7 +323,7 @@ type Uncapitalize<S extends string> = intrinsic;
 
 ## 例题
 
-练习1：Getter
+**练习1：Getter 难度：3/5**
 
 - 构造一个类型`Getter<T>`，其包含`T`所有属性的Getter方法
 - 对于`T`中的每一个**非函数**成员`abc`，`Getter<T>`有对应的`getter`方法(即一个无参数方法，返回类型为abc的类型)
@@ -347,7 +347,7 @@ Getter<{
 }
 ```
 
-练习2：PropertyName
+**练习2：PropertyName 难度：3/5**
 
 - 构造一个类型`PropertyName<T>`，其联合`T`的所有属性的名字
 - 对于`T`中的每个**函数**成员
@@ -370,6 +370,23 @@ PropertyName<{
 
 'id' | 'valid' | 'name' | 'locked'
 ```
+
+**练习3：TransferChain 难度：4/5**
+
+现有`Transfer`类型，需要构造`TransferChain`类型，使其可以链式地通过给定的`Transfer`进行转换。
+
+示例如下
+
+```typescript
+type Transfer<F, T> = (f: F) => T
+type TransferChain<F, Transfers extends Transfer<any, any>[]> = ?
+// TransferChain<1, []> => 1
+// TransferChain<1, [Transfer<1,2>]> => 2
+// TransferChain<1, [Transfer<1,2>, Transfer<2,3>]> => 3
+// TransferChain<1, [Transfer<1,2>, Transfer<2,3>, Transfer<3,4>]> => 4
+// TransferChain<1, [Transfer<string,2>]> => never
+```
+
 
 ## 其他工具
 
