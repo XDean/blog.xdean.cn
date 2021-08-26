@@ -18,11 +18,11 @@ export const PostHeader = ({meta}: Props) => {
   const remoteLike = useSWR<LikeState>(`/api/like?postId=${meta.path}`)
   const [like, setLike] = useState<LikeState>()
 
-  useEffect(()=>setLike(remoteLike.data), [remoteLike.data])
+  useEffect(() => setLike(remoteLike.data), [remoteLike.data])
 
   const onLike = useCallback(() => {
     setLike(l => l === undefined ? {total: 1, you: 1} : ({
-      total: l.you ? l.total + 1 : l.total - 1,
+      total: l.you ? l.total - 1 : l.total + 1,
       you: 1 - l.you,
     }))
     fetch(`/api/like?postId=${meta.path}&value=${(remoteLike.data?.you || 0) === 0}`, {
