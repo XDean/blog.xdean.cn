@@ -1,6 +1,6 @@
 import {format} from "date-fns";
 import {Tag} from "common/components/Tag";
-import React, {useCallback} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {PostMeta} from "src/domain";
 import useSWR from "swr";
 import {Like} from "../../../common/components/Like";
@@ -15,14 +15,21 @@ type LikeState = {
 }
 
 export const PostHeader = ({meta}: Props) => {
-  const like = useSWR<LikeState>(`/api/like?postId=${meta.path}`)
+  const remoteLike = useSWR<LikeState>(`/api/like?postId=${meta.path}`)
+  const [like, setLike] = useState<LikeState>()
+
+  useEffect(()=>setLike(remoteLike.data), [remoteLike.data])
 
   const onLike = useCallback(() => {
-    fetch(`/api/like?postId=${meta.path}&value=${(like.data?.you || 0) === 0}`, {
+    setLike(l => l === undefined ? {total: 1, you: 1} : ({
+      total: l.you ? l.total + 1 : l.total - 1,
+      you: 1 - l.you,
+    }))
+    fetch(`/api/like?postId=${meta.path}&value=${(remoteLike.data?.you || 0) === 0}`, {
       method: 'POST'
     })
-      .then(() => like.mutate())
-  }, [like, meta])
+      .then(() => remoteLike.mutate())
+  }, [remoteLike, meta])
 
   return (
     <div id={'title'}>
@@ -30,9 +37,9 @@ export const PostHeader = ({meta}: Props) => {
         <div className={'inline-block text-2xl md:text-4xl'}>
           {meta.title}
         </div>
-        {like.data && (
+        {like && (
           <div className={'inline-block ml-2'}>
-            <Like total={like.data.total} like={like.data.you > 0} onLike={onLike}/>
+            <Like total={like.total} like={like.you > 0} onLike={onLike}/>
           </div>
         )}
       </div>
