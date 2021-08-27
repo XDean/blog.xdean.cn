@@ -3,8 +3,10 @@ import {Tag} from "common/components/Tag";
 import React, {useCallback} from "react";
 import {PostMeta} from "src/domain";
 import useSWR from "swr";
-import {Like} from "../../../common/components/Like";
-import {Read} from "../../../common/components/button/Read";
+import {Like} from "common/components/badge/Like";
+import {Print} from "common/components/badge/Print";
+import {Read} from "common/components/badge/Read";
+import {isSSR} from "common/util/next";
 
 export type Props = {
   meta: PostMeta
@@ -16,45 +18,6 @@ type LikeState = {
 }
 
 export const PostHeader = ({meta}: Props) => {
-  const like = useSWR<LikeState>(`/api/like?postId=${meta.path}`)
-
-  const onLike = useCallback(() => {
-    fetch(`/api/like?postId=${meta.path}&value=${(like.data?.you || 0) === 0}`, {
-      method: 'POST'
-    })
-      .then(() => like.mutate())
-    like.mutate(l => l === undefined ? {total: 1, you: 1} : ({
-      total: l.you ? l.total - 1 : l.total + 1,
-      you: 1 - l.you,
-    }), false)
-  }, [like, meta])
-
-  const onPrint = () => {
-    const iframe = document.createElement("iframe");
-
-    function closePrint() {
-      document.body.removeChild(iframe);
-    }
-
-    function setPrint() {
-      if (iframe.contentWindow) {
-        iframe.contentWindow.onbeforeunload = closePrint;
-        iframe.contentWindow.onafterprint = closePrint;
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      }
-    }
-
-    iframe.onload = setPrint;
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    iframe.src = `${window.location.href}?layout=false&print=true`;
-    document.body.appendChild(iframe);
-  }
 
   return (
     <div id={'title'}>
@@ -63,18 +26,13 @@ export const PostHeader = ({meta}: Props) => {
           {meta.title}
         </span>
         <div className={'inline-block'}>
-          <Read total={'loading'}/>
+          <Read total={0} loading={true}/>
         </div>
-        {like.data && (
-          <div className={'inline-block'}>
-            <Like total={like.data.total} like={like.data.you > 0} onLike={onLike}/>
-          </div>
-        )}
-        <div onClick={onPrint}
-             className={'inline-block rounded border hover:bg-blue-200 cursor-pointer p-1'}
-             title={'打印/保存为PDF'}
-        >
-          🖨️
+        <div className={'inline-block'}>
+          <LikeButton postId={meta.path}/>
+        </div>
+        <div className={'inline-block'}>
+          <Print url={`${!isSSR() && window.location.href}?layout=false&print=true`}/>
         </div>
       </div>
       <div className={'mt-2 ml-0.5 flex items-center space-x-1'}>
@@ -87,5 +45,26 @@ export const PostHeader = ({meta}: Props) => {
       <div>
       </div>
     </div>
+  )
+}
+
+const LikeButton = ({postId}: { postId: string }) => {
+  const like = useSWR<LikeState>(`/api/like?postId=${postId}`)
+  const onLike = useCallback(() => {
+    fetch(`/api/like?postId=${postId}&value=${(like.data?.you || 0) === 0}`, {
+      method: 'POST'
+    })
+      .then(() => like.mutate())
+    like.mutate(l => l === undefined ? {total: 1, you: 1} : ({
+      total: l.you ? l.total - 1 : l.total + 1,
+      you: 1 - l.you,
+    }), false)
+  }, [like, postId])
+  return (
+    <Like total={like.data?.total}
+          like={!!like.data?.you}
+          loading={like.data === undefined}
+          onLike={onLike}
+    />
   )
 }
