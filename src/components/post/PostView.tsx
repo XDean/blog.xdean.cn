@@ -6,6 +6,8 @@ import Head from "next/head";
 import clsx from "clsx";
 import {PostFooter} from "./PostFooter";
 import {PostLinks} from "./PostLinks";
+import {useRouter} from "next/router";
+import {PostPrintView} from "./PostPrintView";
 
 type Props = PropsWithChildren<{
   meta: PostMeta
@@ -13,6 +15,10 @@ type Props = PropsWithChildren<{
 
 export const PostView = (props: Props) => {
   const {children, meta} = props
+  const router = useRouter()
+  if (router && router.query.print) {
+    return <PostPrintView meta={meta}>{children}</PostPrintView>
+  }
   return (
     <div className={'w-full max-w-screen-xl mx-auto px-4'}>
       <Head>
