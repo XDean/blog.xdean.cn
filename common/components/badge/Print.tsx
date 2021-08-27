@@ -35,7 +35,7 @@ export const Print = (props: Props) => {
   }
 
   return (
-    <Badge left={'🖨️打印'}
+    <Badge left={'🖨️ 打印'}
            tooltip={'打印/保存为PDF'}
            onLeftClick={onPrint}
     />

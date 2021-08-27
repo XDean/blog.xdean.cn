@@ -9,7 +9,7 @@ type Props = {
 export const Read = (props: Props) => {
   const {total, loading} = props
   return (
-    <Badge left={'👋‍️阅读'}
+    <Badge left={'👋 ‍️阅读'}
            right={total}
            loading={loading}
            tooltip={'阅读量'}/>

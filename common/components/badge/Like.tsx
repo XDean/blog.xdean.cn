@@ -12,7 +12,7 @@ export const Like = (props: Props) => {
   const {like = false, total = 0, loading, onLike} = props
 
   return (
-    <Badge left={`${like ? '❤️' : '🤍'}喜欢`}
+    <Badge left={`❤️ ${like ? '已喜欢' : '喜欢'}`}
            right={total}
            loading={loading}
            onLeftClick={onLike}

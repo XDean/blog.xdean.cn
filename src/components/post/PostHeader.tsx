@@ -12,40 +12,41 @@ export type Props = {
   meta: PostMeta
 }
 
-type LikeState = {
-  total: number
-  you: number
-}
-
 export const PostHeader = ({meta}: Props) => {
 
   return (
-    <div id={'title'}>
-      <div className={'space-x-2'}>
+    <div id={'title'} className={'space-y-2'}>
+      <div>
         <span className={'text-2xl md:text-4xl'}>
           {meta.title}
         </span>
-        <div className={'inline-block'}>
-          <Read total={0} loading={true}/>
-        </div>
-        <div className={'inline-block'}>
-          <LikeButton postId={meta.path}/>
-        </div>
-        <div className={'inline-block'}>
-          <Print url={`${!isSSR() && window.location.href}?layout=false&print=true`}/>
-        </div>
       </div>
-      <div className={'mt-2 ml-0.5 flex items-center space-x-1'}>
+      <div className={'ml-0.5 flex items-center space-x-1'}>
         <div>
           {format(meta.date, 'yyyy-MM-dd')}
         </div>
         {meta.categories.map(c => <Tag key={c} text={c}/>)}
         {meta.tags.map(c => <Tag key={c} text={c}/>)}
       </div>
-      <div>
+      <div className={'space-x-2'}>
+        <div className={'inline-block'}>
+          <ReadButton postId={meta.path}/>
+        </div>
+        <div className={'inline-block'}>
+          <LikeButton postId={meta.path}/>
+        </div>
+        <div className={'inline-block'}>
+          <PrintButton/>
+        </div>
       </div>
     </div>
   )
+}
+
+
+type LikeState = {
+  total: number
+  you: number
 }
 
 const LikeButton = ({postId}: { postId: string }) => {
@@ -61,10 +62,30 @@ const LikeButton = ({postId}: { postId: string }) => {
     }), false)
   }, [like, postId])
   return (
-    <Like total={like.data?.total}
+    <Like total={like.data?.total || 0}
           like={!!like.data?.you}
           loading={like.data === undefined}
           onLike={onLike}
     />
+  )
+}
+
+
+type ReadState = {
+  total: number
+}
+
+const ReadButton = ({postId}: { postId: string }) => {
+  const read = useSWR<ReadState>(`/api/read?postId=${postId}`)
+  return (
+    <Read total={read.data?.total || 0}
+          loading={read.data === undefined}
+    />
+  )
+}
+
+const PrintButton = () => {
+  return (
+    <Print url={`${!isSSR() && window.location.href}?layout=false&print=true`}/>
   )
 }
