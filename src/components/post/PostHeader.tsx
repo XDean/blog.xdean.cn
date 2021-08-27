@@ -4,6 +4,7 @@ import React, {useCallback} from "react";
 import {PostMeta} from "src/domain";
 import useSWR from "swr";
 import {Like} from "../../../common/components/Like";
+import {Read} from "../../../common/components/button/Read";
 
 export type Props = {
   meta: PostMeta
@@ -57,17 +58,20 @@ export const PostHeader = ({meta}: Props) => {
 
   return (
     <div id={'title'}>
-      <div>
+      <div className={'space-x-2'}>
         <span className={'text-2xl md:text-4xl'}>
           {meta.title}
         </span>
+        <div className={'inline-block'}>
+          <Read total={'loading'}/>
+        </div>
         {like.data && (
-          <div className={'inline-block ml-2'}>
+          <div className={'inline-block'}>
             <Like total={like.data.total} like={like.data.you > 0} onLike={onLike}/>
           </div>
         )}
         <div onClick={onPrint}
-             className={'inline-block ml-2 rounded border hover:bg-blue-200 cursor-pointer p-1'}
+             className={'inline-block rounded border hover:bg-blue-200 cursor-pointer p-1'}
              title={'打印/保存为PDF'}
         >
           🖨️
