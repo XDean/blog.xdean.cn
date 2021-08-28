@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import {Badge} from "./Badge";
 
 type Props = {
@@ -7,11 +7,14 @@ type Props = {
 
 export const Print = (props: Props) => {
   const {url} = props
+  const [running, setRunning] = useState(false)
   const onPrint = () => {
+    setRunning(true)
     const iframe = document.createElement("iframe");
 
     function closePrint() {
       document.body.removeChild(iframe);
+      setRunning(false)
     }
 
     function setPrint() {
@@ -38,6 +41,7 @@ export const Print = (props: Props) => {
     <Badge left={'🖨️ 打印'}
            tooltip={'打印/保存为PDF'}
            onLeftClick={onPrint}
+           loading={running}
     />
   )
 }

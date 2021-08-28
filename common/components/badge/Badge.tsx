@@ -25,7 +25,7 @@ export const Badge = (props: Props) => {
       >
         {left}
       </div>
-      {right !== undefined && (
+      {(loading || right !== undefined) && (
         <div
           className={clsx('pl-2 pr-2 py-1',
             onRightClick && 'cursor-pointer hover:bg-gray-200'

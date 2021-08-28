@@ -86,6 +86,6 @@ const ReadButton = ({postId}: { postId: string }) => {
 
 const PrintButton = () => {
   return (
-    <Print url={`${!isSSR() && window.location.href}?layout=false&print=true`}/>
+    <Print url={`${!isSSR() && window.location.href}?layout=false&print=true&_image_loading=eager`}/>
   )
 }
