@@ -7,6 +7,8 @@ import {Like} from "common/components/badge/Like";
 import {Print} from "common/components/badge/Print";
 import {Read} from "common/components/badge/Read";
 import {isSSR} from "common/util/next";
+import {Comment} from "common/components/badge/Comment";
+import {Like as LikeState, Read as ReadState} from 'common/api/impl/domain'
 
 export type Props = {
   meta: PostMeta
@@ -29,24 +31,13 @@ export const PostHeader = ({meta}: Props) => {
         {meta.tags.map(c => <Tag key={c} text={c}/>)}
       </div>
       <div className={'space-x-2'}>
-        <div className={'inline-block'}>
-          <ReadButton postId={meta.path}/>
-        </div>
-        <div className={'inline-block'}>
-          <LikeButton postId={meta.path}/>
-        </div>
-        <div className={'inline-block'}>
-          <PrintButton/>
-        </div>
+        <ReadButton postId={meta.path}/>
+        <LikeButton postId={meta.path}/>
+        <CommentButton/>
+        <PrintButton/>
       </div>
     </div>
   )
-}
-
-
-type LikeState = {
-  total: number
-  you: number
 }
 
 const LikeButton = ({postId}: { postId: string }) => {
@@ -56,9 +47,9 @@ const LikeButton = ({postId}: { postId: string }) => {
       method: 'POST'
     })
       .then(() => like.mutate())
-    like.mutate(l => l === undefined ? {total: 1, you: 1} : ({
+    like.mutate(l => l === undefined ? {total: 1, you: true} : ({
       total: l.you ? l.total - 1 : l.total + 1,
-      you: 1 - l.you,
+      you: !l.you,
     }), false)
   }, [like, postId])
   return (
@@ -68,11 +59,6 @@ const LikeButton = ({postId}: { postId: string }) => {
           onLike={onLike}
     />
   )
-}
-
-
-type ReadState = {
-  total: number
 }
 
 const ReadButton = ({postId}: { postId: string }) => {
@@ -87,5 +73,12 @@ const ReadButton = ({postId}: { postId: string }) => {
 const PrintButton = () => {
   return (
     <Print url={`${!isSSR() && window.location.href}?layout=false&print=true&_image_loading=eager`}/>
+  )
+}
+
+const CommentButton = () => {
+  return (
+    <Comment onGotoComment={() =>
+      document.getElementById('comment')?.scrollIntoView()}/>
   )
 }

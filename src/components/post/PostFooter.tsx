@@ -27,10 +27,12 @@ export const PostFooter = (props: Props) => {
           </Link>
         )}
       </div>
-      <Utterances repo={CONSTANT.commentRepo as `${string}/${string}`}
-                  issueTerm={'pathname'}
-                  theme={'github-light'}
-      />
+      <div id={'comment'}>
+        <Utterances repo={CONSTANT.commentRepo as `${string}/${string}`}
+                    issueTerm={'pathname'}
+                    theme={'github-light'}
+        />
+      </div>
     </div>
   )
 }
