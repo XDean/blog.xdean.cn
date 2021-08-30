@@ -1,6 +1,8 @@
 @import "~github-markdown-css/github-markdown.css";
 @import "~prismjs/themes/prism-okaidia.css";
 @import "~katex/dist/katex.min.css";
+@import '~prismjs/plugins/treeview/prism-treeview.css';
+@import '~prismjs/plugins/line-numbers/prism-line-numbers.css';
 
 .markdown-body ol {
     @apply list-decimal;

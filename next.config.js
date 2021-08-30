@@ -1,5 +1,5 @@
 const withPlugins = require('next-compose-plugins');
-const rehypePrism = require('@mapbox/rehype-prism');
+const remarkPrism = require('remark-prism');
 const remarkMath = require('remark-math')
 const rehypeKatex = require('rehype-katex')
 const rehypeSlug = require('rehype-slug')
@@ -22,13 +22,18 @@ module.exports = withPlugins([
           {
             loader: require.resolve('@mdx-js/loader'),
             options: {
-              remarkPlugins: [remarkMath],
+              remarkPlugins: [
+                remarkMath,
+                [remarkPrism, {
+                  plugins: [
+                    'line-numbers',
+                    'treeview',
+                  ]
+                }]
+              ],
               rehypePlugins: [
                 rehypeSlug,
                 rehypeKatex,
-                [rehypePrism, {
-                  ignoreMissing: true
-                }]
               ],
             },
           },
