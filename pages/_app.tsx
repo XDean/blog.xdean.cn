@@ -3,9 +3,13 @@ import '../styles/global.css'
 import Head from 'next/head'
 import {Layout} from "../src/components/layout/Layout";
 import {useRouter} from "next/router";
+import {useGA} from "../common/util/ga";
+import {CONSTANT} from "../src/constants";
+
 
 function MyApp({Component, pageProps}: AppProps) {
   const router = useRouter()
+  useGA(CONSTANT.gaId)
   return (
     <>
       <Head>
