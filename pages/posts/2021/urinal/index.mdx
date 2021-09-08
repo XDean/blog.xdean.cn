@@ -1,0 +1,153 @@
+import {postMeta} from "src/domain"
+import urinal from './urinal.jpg'
+import threeMan from './3-man.png'
+import Image from "common/components/Image"
+import {Urinal} from "components/urinal"
+
+export const meta = postMeta({
+  title: 'The Urinal Problem 小便池问题',
+  date: new Date('2021-09-08'),
+  tags: [],
+  categories: ['Math'],
+  draft: true,
+})
+
+_看到标题你或许会内心一惊，但是请放心，这里是正经博客，讨论的是一个数学问题_
+
+## 序
+
+小便池问题是在我初中时期广为流传的一个问题(梗)。
+在和H君和R君两次提起这个问题之后，终于勾起了我重新解题的冲动。
+距离上一次思考这个问题已经是十多年前了，彼时的我并没有得出通解，一觉过后也就未再深究。
+今天希望我可以顺利解出。
+
+## 背景
+
+_男同胞可以选择跳过本节_
+
+一般男厕所由两部分组成，即小便池和单间。
+
+其中小便池通常一字排开，条件好一点的还会有隔板隔开。
+
+<Image src={urinal}/>
+
+然而，小便池资源在很多时候不能被充分利用。对于不能明白其中缘由的朋友，请看下图。
+
+<Image src={threeMan}/>
+
+图中蓝衣选手正处在一个尴尬的境地，中间空闲的小便池并不被他视为有效资源。
+
+这在医学上其实是一种病症，尿羞症，学名境遇性排尿障碍。
+当有他人再侧时，无法正常解决生理问题。病情严重的，甚至有人在门外等待都会造成障碍。
+
+不负责任的说，大多数男生都有这一症状，区别只是轻重。
+
+当然，严重的病情我们留由医生去解决。今天的"小便池问题"要解决的就是蓝衣选手的困境。
+
+## 问题
+
+对于任意男生，在面对一字排开的小便池时，其选择位置总是遵循以下“公理”
+
+1. 选择离门最近的位置
+2. 如果已经有人，则选择离所有人最远的位置，当有多个位置的时候遵循规则1
+3. 永远不和别人相邻
+
+现有$n$个男生，求所需小便池数量$U(n)$。
+
+另有逆问题，若有$n$个小便池，最多容纳男生的数量$P(n), P=U^{-1}$。
+
+## 解题
+
+拿到问题，首先我们可以推演前几项，看看有什么规律。(我们用$X$来标记有人的位置，用$O$来标记空位)
+
+$$
+\begin{aligned}
+U(1)&=1, X\\
+U(2)&=3, XOX\\
+U(3)&=5, XOXOX
+\end{aligned}
+$$
+
+然而到了4个人的时候，情况有些不一样。天真的同学会脱口而出答案是7。
+然而如果只有7个小便池，会发生下面的窘境。
+
+$$
+XOOXOOX
+$$
+
+是的，第3个男生遵循公理2，直接站到了正中心。
+这使得第4个男生无路可走了。
+
+所以4个男生的情况，需要8个小便池，即$XOOXOXOX$
+
+下面提供了一个小组件可以进行简单实验。
+
+<div className={'mb-2 mx-auto'}>
+<Urinal/>
+</div>
+
+通过实验，我们得到了更多的几项
+
+$$
+\begin{aligned}
+U(4)&=8, XOOXOXOX\\
+U(5)&=9, XOXOXOXOX\\
+U(6)&=14, XOOXOOXOOXOOX
+\end{aligned}
+$$
+
+当然，我们不能永远实验下去，我们需要对现有的结果进行归纳总结和推理计算。
+
+通过对现有结果的观察和公理3的理解
+
+- 最差情况下每个男生占用3个位置，头尾除外
+- 最好情况下，所有男生间隔站开
+
+即
+
+$$
+3n - 2 >= U(n) >= 2n - 1
+$$
+
+另一方面，由于头尾总是会被先占用，又由于公理3，第2个和倒数第2个位置总是不可用。
+我们可以摘头去尾后另计$P'(n)$，其表示在首尾有人的情况下，中间n个空位可以容纳的人数，易知：
+
+$$
+\begin{aligned}
+P'(n) &= P(n+4) - 2 \\
+P'(1) &= 1 \\
+P'(4) &= 2 \\
+P'(5) &= 3 \\
+P'(10) &= 4
+\end{aligned}
+$$
+
+每当新人加入时，原有区域就被划分为两块，而每一块都可以看作时一个独立的$P'$问题，即：
+
+$$
+\begin{aligned}
+P'(n) = \begin{cases}
+2P'(k-1) + 1&, \quad n = 2k + 1 \\
+P'(k-2) + P'(k-1) + 1&, \quad n = 2k
+\end{cases}
+\end{aligned}
+$$
+
+带入$P(n)$替换可得：
+
+$$
+\begin{aligned}
+P(n) &= \begin{cases}
+2P(k+1) - 1&, \quad n = 2k + 1 \\
+P(k) + P(k+1) - 1&, \quad n = 2k
+\end{cases} \\
+P(1) &= P(2) = 1 \\
+P(3) &= P(4) = 2
+\end{aligned}
+$$
+
+
+## 引用
+
+- [The Urinal Problem, Evangelos kranakis and Danny krizanc](https://people.scs.carleton.ca/~kranakis/Papers/urinal.pdf)
+- [男生尿尿尴尬问题研究报告](https://www.thepaper.cn/newsDetail_forward_12190712)

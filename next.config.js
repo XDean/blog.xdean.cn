@@ -33,7 +33,9 @@ module.exports = withPlugins([
               ],
               rehypePlugins: [
                 rehypeSlug,
-                rehypeKatex,
+                [rehypeKatex, {
+                  strict: false
+                }],
               ],
             },
           },

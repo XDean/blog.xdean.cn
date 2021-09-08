@@ -10,6 +10,7 @@ export type PostMetaInline = {
   prev?: string
   next?: string
   toc?: boolean
+  draft?: boolean
   links?: {
     name: string
     link: string

@@ -20,4 +20,8 @@
     .link:hover {
         @apply underline;
     }
+
+    .btn {
+        @apply border shadow rounded hover:bg-gray-100 hover:border-blue-300 p-1;
+    }
 }
