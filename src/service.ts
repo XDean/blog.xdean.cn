@@ -63,7 +63,7 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
 
 export async function getAllPostMetas() {
   const slugs = await getAllPostFilePaths()
-  return (await Promise.all(slugs.map(slug => getPostMetaByFilePath(slug)))).filter(e => e.draft === undefined || e.draft)
+  return (await Promise.all(slugs.map(slug => getPostMetaByFilePath(slug)))).filter(e => !e.draft)
 }
 
 export async function getPostByPage(page: number) {
