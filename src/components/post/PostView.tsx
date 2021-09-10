@@ -26,7 +26,7 @@ export const PostView = (props: Props) => {
         title={meta.title}
         nofollow={true}
         openGraph={{
-          title: meta.title,
+          title: `${meta.title} | XDean的博客`,
           type: 'article',
           description: meta.summary,
           article: {

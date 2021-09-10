@@ -14,6 +14,15 @@ export default function View(props: Props) {
     <>
       <NextSeo
         title={'首页'}
+        openGraph={{
+          title: 'XDean的博客',
+          type: 'website',
+          images: [{
+            url: '/icon/192.webp',
+            width: 192,
+            height: 192,
+          }]
+        }}
       />
       <PostPageView page={props.data}/>
     </>
