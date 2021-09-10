@@ -3,6 +3,7 @@ import {PostMeta} from "src/domain";
 import {getPostByPage} from "src/service";
 import {Page} from 'common/util/page'
 import {PostPageView} from "../src/components/page/PostPageView";
+import {NextSeo} from "next-seo";
 
 type Props = {
   data: Page<PostMeta>
@@ -10,7 +11,12 @@ type Props = {
 
 export default function View(props: Props) {
   return (
-    <PostPageView page={props.data}/>
+    <>
+      <NextSeo
+        title={'首页'}
+      />
+      <PostPageView page={props.data}/>
+    </>
   )
 }
 

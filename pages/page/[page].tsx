@@ -5,6 +5,7 @@ import {getAllPostMetas, getPostByPage} from "src/service";
 import {CONSTANT} from "src/constants";
 import {range} from "common/util/array";
 import {Page} from 'common/util/page'
+import {NextSeo} from "next-seo";
 
 type Props = {
   data: Page<PostMeta>
@@ -15,8 +16,15 @@ type Params = {
 }
 
 export default function View(props: Props) {
+  const page = props.data
   return (
-    <PostPageView page={props.data}/>
+    <>
+      <NextSeo
+        title={page.page === 1 ? '首页' : `第${page.page}页`}
+        noindex={true}
+      />
+      <PostPageView page={props.data}/>
+    </>
   )
 }
 

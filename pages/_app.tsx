@@ -5,6 +5,7 @@ import {Layout} from "../src/components/layout/Layout";
 import {useRouter} from "next/router";
 import {useGA} from "../common/util/ga";
 import {CONSTANT} from "../src/constants";
+import {DefaultSeo} from "next-seo";
 
 
 function MyApp({Component, pageProps}: AppProps) {
@@ -12,6 +13,10 @@ function MyApp({Component, pageProps}: AppProps) {
   useGA(CONSTANT.gaId)
   return (
     <>
+      <DefaultSeo
+        defaultTitle={'XDean的博客'}
+        titleTemplate={'%s | XDean的博客'}
+      />
       <Head>
         <title>XDean NextJS Template</title>
       </Head>

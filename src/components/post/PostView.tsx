@@ -2,12 +2,12 @@ import {PropsWithChildren} from "react";
 import {PostMeta} from "../../domain";
 import {PostHeader} from "./PostHeader";
 import {Toc} from "./Toc";
-import Head from "next/head";
 import clsx from "clsx";
 import {PostFooter} from "./PostFooter";
 import {PostLinks} from "./PostLinks";
 import {useRouter} from "next/router";
 import {PostPrintView} from "./PostPrintView";
+import {NextSeo} from "next-seo";
 
 type Props = PropsWithChildren<{
   meta: PostMeta
@@ -15,15 +15,32 @@ type Props = PropsWithChildren<{
 
 export const PostView = (props: Props) => {
   const {children, meta} = props
+  const image = meta.image as StaticImageData
   const router = useRouter()
   if (router && router.query.print) {
     return <PostPrintView meta={meta}>{children}</PostPrintView>
   }
   return (
     <div className={'w-full max-w-screen-xl mx-auto px-4'}>
-      <Head>
-        <title>{meta.title} | XDean的博客</title>
-      </Head>
+      <NextSeo
+        title={meta.title}
+        nofollow={true}
+        openGraph={{
+          title: meta.title,
+          type: 'article',
+          description: meta.summary,
+          article: {
+            authors: ['XDean'],
+            tags: [...meta.categories, ...meta.tags],
+            publishedTime: meta.date.toISOString(),
+          },
+          images: image && [{
+            url: image.src,
+            width: image.width,
+            height: image.height,
+          }]
+        }}
+      />
       {meta.tocData && (
         <div
           className={clsx('hidden md:block float-left sticky top-32',
