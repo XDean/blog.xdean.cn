@@ -18,7 +18,7 @@ export default function View(props: Props) {
           title: 'XDean的博客',
           type: 'website',
           images: [{
-            url: '/icon/192.webp',
+            url: '/icons/192.webp',
             width: 192,
             height: 192,
           }]
