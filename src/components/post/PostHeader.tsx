@@ -1,14 +1,15 @@
-import {format} from "date-fns";
-import {Tag} from "common/components/Tag";
-import React, {useCallback} from "react";
-import {PostMeta} from "src/domain";
-import useSWR from "swr";
-import {Like} from "common/components/badge/Like";
-import {Print} from "common/components/badge/Print";
-import {Read} from "common/components/badge/Read";
-import {isSSR} from "common/util/next";
-import {Comment} from "common/components/badge/Comment";
-import {Like as LikeState, Read as ReadState} from 'common/api/impl/domain'
+import {Like as LikeState, Read as ReadState} from 'common/api/impl/domain';
+import {Comment} from 'common/components/badge/Comment';
+import {Like} from 'common/components/badge/Like';
+import {Print} from 'common/components/badge/Print';
+import {Read} from 'common/components/badge/Read';
+import {Tag} from 'common/components/Tag';
+import {isSSR} from 'common/util/next';
+import {format} from 'date-fns';
+import React, {useCallback} from 'react';
+import {PostMeta} from 'src/domain';
+import useSWR from 'swr';
+import {fetchJsonApi} from '../../../common/util/fetch';
 
 export type Props = {
   meta: PostMeta
@@ -37,48 +38,48 @@ export const PostHeader = ({meta}: Props) => {
         <PrintButton/>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const LikeButton = ({postId}: { postId: string }) => {
-  const like = useSWR<LikeState>(`/api/like?postId=${postId}`)
+  const like = useSWR<LikeState>(`/api/like?postId=${postId}`, fetchJsonApi);
   const onLike = useCallback(() => {
     fetch(`/api/like?postId=${postId}&value=${(like.data?.you || 0) === 0}`, {
-      method: 'POST'
+      method: 'POST',
     })
-      .then(() => like.mutate())
+      .then(() => like.mutate());
     like.mutate(l => l === undefined ? {total: 1, you: true} : ({
       total: l.you ? l.total - 1 : l.total + 1,
       you: !l.you,
-    }), false)
-  }, [like, postId])
+    }), false);
+  }, [like, postId]);
   return (
     <Like total={like.data?.total || 0}
           like={!!like.data?.you}
           loading={like.data === undefined}
           onLike={onLike}
     />
-  )
-}
+  );
+};
 
 const ReadButton = ({postId}: { postId: string }) => {
-  const read = useSWR<ReadState>(`/api/read?postId=${postId}`)
+  const read = useSWR<ReadState>(`/api/read?postId=${postId}`, fetchJsonApi);
   return (
     <Read total={<div title={`${read.data?.total}`}>{read.data?.unique_total}</div> || 0}
           loading={read.data === undefined}
     />
-  )
-}
+  );
+};
 
 const PrintButton = () => {
   return (
     <Print url={`${!isSSR() && window.location.href}?layout=false&print=true&_image_loading=eager`}/>
-  )
-}
+  );
+};
 
 const CommentButton = () => {
   return (
     <Comment onGotoComment={() =>
       document.getElementById('comment')?.scrollIntoView()}/>
-  )
-}
+  );
+};

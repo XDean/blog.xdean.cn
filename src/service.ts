@@ -19,7 +19,6 @@ export async function getAllPostFilePaths() {
 }
 
 export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
-  console.log(path, new Date())
   path = slash(path);
   const module = await import(`pages/posts/${path}`);
   const meta = {

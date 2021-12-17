@@ -30,9 +30,7 @@ export default function View(props: Props) {
 }
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
-  console.log(1, new Date())
   const data = await getPostByPage(1)
-  console.log(2, new Date())
   return {
     props: {
       data
