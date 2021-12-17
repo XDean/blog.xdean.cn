@@ -25,7 +25,7 @@ export const PostHeader = ({meta}: Props) => {
       </div>
       <div className={'ml-0.5 flex items-center space-x-1'}>
         <div>
-          {format(meta.date, 'yyyy-MM-dd')}
+          {format(new Date(meta.date), 'yyyy-MM-dd')}
         </div>
         {meta.categories.map(c => <Tag key={c} text={c}/>)}
         {meta.tags.map(c => <Tag key={c} text={c}/>)}

@@ -32,7 +32,7 @@ export const PostView = (props: Props) => {
           article: {
             authors: ['XDean'],
             tags: [...meta.categories, ...meta.tags],
-            publishedTime: meta.date.toISOString(),
+            publishedTime: new Date(meta.date).toISOString(),
           },
           images: image && [{
             url: image.src,

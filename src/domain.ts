@@ -4,7 +4,7 @@ export type PostMetaInline = {
   title?: string
   summary?: string
   image?: Exclude<ImageProps['src'], string>
-  date: Date
+  date: string
   categories: string[]
   tags: string[]
   prev?: string

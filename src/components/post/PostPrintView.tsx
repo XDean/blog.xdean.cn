@@ -24,7 +24,7 @@ export const PostPrintView = (props: Props) => {
           {meta.title}
         </div>
         <div className={'inline-block ml-2'}>
-          {format(meta.date, 'yyyy-MM-dd')}
+          {format(new Date(meta.date), 'yyyy-MM-dd')}
         </div>
       </div>
       <hr/>

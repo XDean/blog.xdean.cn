@@ -28,7 +28,7 @@ export const PostCard = (props: Props) => {
         </div>
         <div className={'mt-1 md:mt-2 space-x-1'}>
           <div className={'inline-block whitespace-nowrap'}>
-            {format(meta.date, 'yyyy-MM-dd')}
+            {format(new Date(meta.date), 'yyyy-MM-dd')}
           </div>
           {meta.categories.map(tag => <Tag key={tag} text={tag}/>)}
           {meta.tags.map(tag => <Tag key={tag} text={tag}/>)}
