@@ -15,7 +15,7 @@ function MyApp({Component, pageProps}: AppProps) {
     <>
       <DefaultSeo
         defaultTitle={'XDean的博客'}
-        titleTemplate={'%s | XDean的博客'}
+        titleTemplate={'%s | XDean'}
       />
       <Head>
         <title>XDean NextJS Template</title>
