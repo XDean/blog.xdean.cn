@@ -1,12 +1,32 @@
 import {postMeta} from 'src/domain';
+import Image from '../../../../common/components/Image';
+import contextAction from './context_action.png';
+import debugBreakpoint from './debug_breakpoint.png';
+import debugMenu from './debug_menu.png';
+import debugSteps from './debug_steps.png';
+import debugSmartStep from './debug_smart_step.png'
+import findAction from './find_action.png';
+import findActionResult from './find_action_result.png';
+import gitBlame from './git_blame.png';
+import gitSimpleConflict from './git_simple_conflict.png';
 import logo from './idea.png';
+import liveFor from './live_for.png'
+import liveForSwitch from './live_for_switch.png'
+import liveSout from './live_sout.png'
+import generate from './generate.png'
+import surround from './surround.png'
+import refactorThis from './refactor_this.png'
+import injectLanguage from './inject_language.png'
+import databaseDatasource from './database_datasource.png'
+import scratchDir from './scratch_dir.png'
+import navigate from './navigate.png'
+import httpClient from './http_client.gif'
 
 export const meta = postMeta({
   date: '2021-03-09',
   image: logo,
   tags: ['IDEA', '工具'],
   categories: ['Coding'],
-  draft: true,
 })
 
 # JetBrain IDEA使用技巧
@@ -18,32 +38,203 @@ JetBrain公司随后又推出了PyCharm, GoLand, WebStorm等软件用于各种�
 
 本文将介绍IDEA的各种使用技巧，他们适用于所有一系列的JetBrain产品。
 
-## 核心 - 重中之重
+- 一些通用功能，例如代码提示，格式化，文件结构，组织导入，在本文不做赘述
+- 图片多以Java为例，其他语言同理
+- 截图中的一些快捷键为笔者的个人习惯，不要直接记忆它们
+- 本文重在使用，不涉及配置
 
-### 全局查找命令
+## 查找动作
 
-我们要学习的第一个也是最重要的命令就是`全局查找命令` (`Find Actions`)
+我们要学习的第一个也是最重要的功能就是**查找动作** (Find Action)。默认快捷键为<kbd>CTRL+SHIFT+A</kbd>。
 
-###
+<Image src={findAction}/>
 
-### 模板生成
+在这里你可以查找IDEA内所有可用的动作，只需要输入你想要做的事情。
 
-- for/fori
+学会了这个快捷键之后，我们可以不用一次性记忆大量的快捷键，只需要查找即可。
+查找结果也会显示对应的快捷键，从而帮助我们记忆常用的功能。
 
-### Git
+下图展示了查找结果。
 
-- magic merge
+<Image src={findActionResult}/>
 
-## Inject Language
+后文中将会学习的功能，我们都不会强调它的快捷键，而是给出**粗体**的关键词，你可以自己查找动作。
 
-## DB
+## 上下文动作
 
-## 重构/代码生成
+除了全局的动作，有一些动作只有在特定的代码上执行，称之为**上下文动作** (Context Action)。
+
+例如快速修复Error(红线)或Warning(黄线)，亦或快速重构代码。
+
+当光标位于对应代码块时，可以通过_查找动作_来搜索，但是它们会被混杂在全局动作中。
+更直接的方法就是使用快捷键唤出上下文菜单，默认快捷键<kbd>ALT + ENTER</kbd>。
+
+下图展示了一个上下文动作菜单。
+
+<Image src={contextAction}/>
+
+## 代码生成
+
+### Live Template
+
+IDEA为各语言预制了许多模板，可以快速插入一些常用语句
+
+- 关键词：**Insert Live Template**
+- 在代码提示中也会显示Live Template的选项
+
+其中常用的有
+- for/fori/forr，生成各种样式的for循环，上下文动作中还可以快速切换
+
+<Image src={liveFor}/>
+<Image src={liveForSwitch} width={400}/>
+
+- sout/serr，生成打印语句，也可以快捷打印栈信息等debug信息
+
+<Image src={liveSout}/>
+
+
+### Generate
+
+IDEA可以为当前上下文自动生成一些代码
+
+- 关键词：**Generate...**
+- 默认快捷键： <kbd>ALT + INSERT</kbd>
+
+<Image src={generate} width={300}/>
+
+### Surround With
+
+IDEA可以将已有的代码快速包裹在if/while/try等代码块内。
+
+- 关键词：**Surround With**
+- 使用时需要选中被包裹的代码块，否则默认选中当前行
+
+<Image src={surround} width={300}/>
+
+## 代码重构
+
+IDEA附带了大量且全面的重构功能，功能繁多，在此只介绍常用的重构选项。
+
+- 关键词： **Refactor This**
+- 注意光标要在重构处（或选中需要重构的代码）
+
+<Image src={refactorThis} width={400}/>
+
+- extract/introduce，从现有代码中提取公共代码
+    - 提取常量/变量
+    - 提取方法
+    - 提取接口/超类
+- inline，提取的逆操作，将代码展开到所有调用处
+- pull-up/push-down，将方法或域向上层提（向下推）
+- constructor to builder/factory，根据构造器自动构建工厂或builder类
 
 ## 调试
 
+### 断点选项
+
+<Image src={debugBreakpoint}/>
+
+1. Condition，设置断点条件，何时触发
+2. Log，按需打印断点日志
+3. Filter，过滤条件
+    - 按实例ID
+    - 按实现类
+    - 跳过前N次
+    - 按调用者
+4. ExceptionBreakpoint，按异常类型捕获
+
+### 步骤选项
+
+<Image src={debugSteps} width={300}/>
+
+1. Step Over，步入当前帧下一行
+2. Step Into (force)，步入当前行下一帧（默认跳过某些系统调用，例如`System.out.println`，强制模式可以进入）
+3. Step Out，步出当前帧
+4. Drop Frame，重置当前帧
+5. Step Cursor，步进到光标行
+6. Evaluate，执行返回表达式的值
+
+（IDEA默认开启Smart Step In，在Step In的时候如果一行有多个调用，可以选择进入哪一个）
+<Image src={debugSmartStep} width={400}/>
+
+### 栈选项
+
+<Image src={debugMenu}/>
+
+- Throw Exception，模拟异常
+- Force Return，强制返回
+
+## 导航
+
+在编码过程中，经常要在文件和代码之间来回切换。导航功能可以帮助我们快速定位到想到达的地方。
+
+<Image src={navigate} width={300}/>
+
+- 关键词：**Navigate**
+  - **Back/Forward**，跳转到上（下）一处
+  - **Last Edit Location**，跳转到上一处编辑
+  - **Go to Class/File/Symbol**，查找并跳转
+  - **Go to Line**，跳转到对应行
+  - **GoTo**，跳转到源代码
+  - **Next/Previous Method**，文件内跳转到上（下）一个方法
+- 关键词：**Recent Location**，跳转到最近位置
+- 关键词：**Recent Files**，跳转到最近文件
+
+## Git
+
+- 冲突时点击魔法棒(Resolve Simple Conflict)可以解决大部分简单冲突。
+<Image src={gitSimpleConflict} width='64px'/>
+
+- 右键行号选择`Annotate with Git Blame`，可以显示每行的修改信息。
+<Image src={gitBlame} width="200px"/>
+
+- 选中一段代码，右键`Git -> Show History for Selection`可以查看某个代码段的所有历史。
+
+## 语言注入
+
+对于字符串字面量，可以选择注入语言，从而直接编辑文本本身，脱离转义和换行的苦海。
+
+- 关键词：**Inject Language or reference**
+- 在上下文菜单中可以直接找到该选项
+- 语言注入后，有上下文动作**Edit XXX Fragment**，进入编辑模式
+
+<Image src={injectLanguage}/>
+
+## 数据库
+
+IDEA自带有数据库工具，完全可以不需要SQLyog，Hedis等第三方工具就可以简单地实现数据库互操作。
+
+- 关键词：**Database**
+- 打开Database界面后点击加号添加新的数据库
+- 其支持几乎所有主流数据库
+- UI上可以可视化地执行几乎所有数据库操作，包括但不限于
+    - 增删改查
+    - 增删改查 TABLE/DATABASE
+    - 导入导出
+    - 绘制关系图
+- 代码文件中的SQL语句也可以绑定DataSource后直接执行
+
+<Image src={databaseDatasource} width={200}/>
+
+## 暂存文件
+
+经常我们需要临时写一些文件，而又不希望放在项目当中。这是可以使用IDEA地暂存文件功能。
+
+- 关键词：**Scratch File**
+- 暂存文件会创建在单独的目录，你可以在文件树的`Scatches and Consoles`中找到
+- 暂存文件与项目无关，会在多个项目之中共享
+
+<Image src={scratchDir} width={300}/>
 
 ## 杂项
 
-- scratch
-- http client file
+- **Expand/Shrink Selection**，扩展（缩小）选择，智能地选中正确的字符串区间，不再需要肉眼对准。
+- **Check RegExp**，即时校验正则表达式，测试字符串
+- **Open Blank Diff Window**，打开一个空白的Diff窗口
+- **Absolute Path**，复制文件的绝对路径
+- **Edit: Column Selection Mode**，开启列编辑模式，也可以直接按住<kbd>ALT</kbd>进行选择文本
+- 后缀名为`.http`的文件为HTTP请求文件，可以定义请求并执行，详情见[官方文档][http-client]
+
+<Image src={httpClient}/>
+
+[http-client]: https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html
