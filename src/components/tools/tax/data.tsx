@@ -1,12 +1,8 @@
-export type TaxTableRow = {
-  range: [number, number]
-  rate: number
-  quick: number
-}
+import {BaoXian, TaxLevel} from './types';
 
 export const TAX_THRESHOLD = 5000;
 
-export const TAX_TABLE: TaxTableRow[] = [
+export const TaxMonthLevels: readonly TaxLevel[] = [
   {
     range: [0, 3000],
     rate: 3,
@@ -38,7 +34,7 @@ export const TAX_TABLE: TaxTableRow[] = [
     quick: 7160,
   },
   {
-    range: [80000, 0],
+    range: [80000, Number.POSITIVE_INFINITY],
     rate: 45,
     quick: 15160,
   },
@@ -50,32 +46,29 @@ export const SALARY_STATS = {
   szAvg: 11620,
 } as const;
 
-export const BAO_XIAN = [
+export const DEFAULT_BAO_XIAN: BaoXian[] = [
   {
     name: '养老保险',
     rate: 8,
     base: [SALARY_STATS.min, SALARY_STATS.gdAvg * 3],
-    editable: false,
   },
   {
     name: '医疗保险',
     rate: 2,
     base: [SALARY_STATS.szAvg * 0.6, SALARY_STATS.szAvg * 3],
-    editable: false,
   },
   {
     name: '失业保险',
     rate: 0.3,
     base: SALARY_STATS.min,
-    editable: false,
   },
-  {
-    name: '公积金',
-    rate: 5,
-    base: [SALARY_STATS.min, SALARY_STATS.szAvg * 3],
-    editable: true,
-  },
-] as const;
+];
+
+export const DEFAULT_GONG_JI_JIN: BaoXian = {
+  name: '公积金',
+  rate: 5,
+  base: [SALARY_STATS.min, SALARY_STATS.szAvg * 3],
+};
 
 export const reference = [
   {

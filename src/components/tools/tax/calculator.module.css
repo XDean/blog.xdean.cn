@@ -6,7 +6,7 @@
     @apply pt-4;
 }
 
-.root input {
+.root input[type=number] {
     @apply border border-gray-500 w-24 rounded px-1;
 }
 
@@ -14,12 +14,28 @@
     @apply border-white border-b-gray-500 outline-0;
 }
 
-.content {
+.inputContainer {
     @apply flex space-x-8 divide-x;
 }
 
-.content > *:not(:first-child) {
+.inputContainer > *:not(:first-child) {
     @apply pl-8;
+}
+
+.resultContainer {
+    @apply flex w-full justify-center;
+}
+
+.resultTable {
+    @apply !w-auto mx-auto;
+}
+
+.resultTable td {
+    @apply !border-none
+}
+
+.resultTable tr:first-child {
+    @apply !border-none
 }
 
 .h1 {

@@ -1,4 +1,4 @@
-import {TAX_TABLE} from './data';
+import {TaxMonthLevels} from './data';
 
 type Props = {
   month: boolean
@@ -18,7 +18,7 @@ export const TaxTable = (props: Props) => {
       </tr>
       </thead>
       <tbody>
-      {TAX_TABLE.map((e, i) => (
+      {TaxMonthLevels.map((e, i) => (
         <tr key={i}>
           <td>{i + 1}</td>
           <td>{e.range[0] === 0
