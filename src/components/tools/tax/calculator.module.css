@@ -1,5 +1,5 @@
 .root {
-    @apply border p-4 w-max rounded divide-y space-y-4 my-4;
+    @apply border p-4 w-max max-w-full rounded divide-y space-y-4 my-4;
 }
 
 .root > *:not(:first-child) {
@@ -15,11 +15,11 @@
 }
 
 .inputContainer {
-    @apply flex space-x-8 divide-x;
+    @apply flex flex-col md:flex-row space-y-4 divide-y md:space-y-0 md:divide-y-0 md:space-x-8 md:divide-x;
 }
 
 .inputContainer > *:not(:first-child) {
-    @apply pl-8;
+    @apply pt-4 md:pt-0 md:pl-8;
 }
 
 .resultContainer {

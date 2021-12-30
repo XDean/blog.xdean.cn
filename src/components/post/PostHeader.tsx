@@ -35,7 +35,9 @@ export const PostHeader = ({meta}: Props) => {
         <ReadButton postId={meta.path}/>
         <LikeButton postId={meta.path}/>
         <CommentButton/>
-        <PrintButton/>
+        <div className={'hidden md:inline-block'}>
+          <PrintButton/>
+        </div>
       </div>
     </div>
   );
