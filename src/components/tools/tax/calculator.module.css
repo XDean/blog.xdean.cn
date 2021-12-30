@@ -1,0 +1,44 @@
+.root {
+    @apply border p-4 w-max rounded divide-y space-y-4 my-4;
+}
+
+.root > *:not(:first-child) {
+    @apply pt-4;
+}
+
+.root input {
+    @apply border border-gray-500 w-24 rounded px-1;
+}
+
+.root input:read-only {
+    @apply border-white border-b-gray-500 outline-0;
+}
+
+.content {
+    @apply flex space-x-8 divide-x;
+}
+
+.content > *:not(:first-child) {
+    @apply pl-8;
+}
+
+.h1 {
+    @apply text-3xl font-bold text-center;
+}
+
+.h2 {
+    @apply text-xl font-bold mb-4 text-center;
+}
+
+.text {
+    @apply underline;
+}
+
+.form_table {
+    @apply grid gap-2;
+    grid-template-columns: max-content max-content;
+}
+
+.form_table > div {
+    @apply odd:text-right;
+}

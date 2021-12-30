@@ -1,0 +1,25 @@
+import {TaxCalculator} from '../../../../src/components/tools/tax/calculator';
+import {TaxTable} from '../../../../src/components/tools/tax/table';
+import {postMeta} from '../../../../src/domain';
+
+export const meta = postMeta({
+  title: '个人所得税',
+  date: '2021-12-29',
+  tags: ['财务'],
+  categories: ['工作'],
+  summary: '',
+  toc: false,
+})
+
+由于近期关于全年一次性奖金优惠税率的政策变动，引发了我司全员大讨论。
+
+<TaxCalculator/>
+
+<TaxTable month={true}/>
+
+<TaxTable month={false}/>
+
+
+[税法]: http://www.chinatax.gov.cn/chinatax/n363/c21603682/content.html
+[2005-9]: http://www.chinatax.gov.cn/chinatax/n363/c1306/content.html
+[2018-164]: http://www.chinatax.gov.cn/chinatax/n810341/n810765/n4182981/201901/c4184017/content.html
