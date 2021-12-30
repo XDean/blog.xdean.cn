@@ -7,6 +7,8 @@ function calcBaoXian(e: BaoXian, perMonthSalary: number) {
   const perMonth = base * e.rate * 0.01;
   return {
     name: e.name,
+    base: base,
+    rate: e.rate,
     perMonth: perMonth,
     total: perMonth * 12,
   };
@@ -35,7 +37,7 @@ export function calcTax(param: TaxInput): TaxResult {
   const bonusDiff = Math.max(0, TAX_THRESHOLD - salary.perMonth);
   const bonusBase = Math.max(0, bonusOrigin / 12 - bonusDiff);
   const bonusLevel = TaxMonthLevels.find(e => e.range[0] <= bonusBase && e.range[1] > bonusBase)!;
-  const bonusTax = (bonusOrigin - bonusDiff) * bonusLevel.rate * 0.01 - bonusLevel.quick;
+  const bonusTax = Math.max(0, bonusOrigin - bonusDiff) * bonusLevel.rate * 0.01 - bonusLevel.quick;
 
   return {
     income: income,

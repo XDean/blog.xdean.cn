@@ -31,10 +31,14 @@ export type TaxResult = {
   }
   baoXian: {
     name: string
+    base: number
+    rate: number
     perMonth: number
     total: number
   }[]
   gjj: {
+    base: number
+    rate: number
     perMonth: number
     total: number
   }

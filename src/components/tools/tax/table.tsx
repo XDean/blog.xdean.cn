@@ -23,7 +23,7 @@ export const TaxTable = (props: Props) => {
           <td>{i + 1}</td>
           <td>{e.range[0] === 0
             ? `不超过${e.range[1] * times}元的`
-            : e.range[1] === 0
+            : e.range[1] === Number.POSITIVE_INFINITY
               ? `超过${e.range[0] * times}元的`
               : `超过${e.range[0] * times}元至${e.range[1] * times}元的`}</td>
           <td>{e.rate}</td>

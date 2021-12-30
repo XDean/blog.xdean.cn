@@ -1,25 +1,60 @@
-import {TaxCalculator} from '../../../../src/components/tools/tax/calculator';
+import {TaxCalculator} from '../../../../src/components/tools/tax/calculator'; import {reference} from '../../../../src/components/tools/tax/data';
 import {TaxTable} from '../../../../src/components/tools/tax/table';
 import {postMeta} from '../../../../src/domain';
 
 export const meta = postMeta({
-  title: '个人所得税',
+  title: '个人所得税计算器',
   date: '2021-12-29',
-  tags: ['财务'],
+  tags: ['个税'],
   categories: ['工作'],
   summary: '',
-  toc: false,
 })
 
-由于近期关于全年一次性奖金优惠税率的政策变动，引发了我司全员大讨论。
+由于近期关于全年一次性奖金优惠税率的政策变动，引发了同事之间关于税收的大讨论。
+
+简单的搜索了一下，没有找到很好用的个税计算器，关于年终奖的说明也不清晰。
+
+故查阅了相关资料，自己做了下面的**个税计算器**。另附**税率表**以及**关于奖金的常见问题**。
+
+希望对大家有所帮助。（如果需要对比，建议打开两个窗口）
+
+## 个税计算器
 
 <TaxCalculator/>
 
-<TaxTable month={true}/>
+## 税率表
+
+**年综合累计所得税率表**
 
 <TaxTable month={false}/>
 
+**一次性奖金所得税率表**
 
-[税法]: http://www.chinatax.gov.cn/chinatax/n363/c21603682/content.html
-[2005-9]: http://www.chinatax.gov.cn/chinatax/n363/c1306/content.html
-[2018-164]: http://www.chinatax.gov.cn/chinatax/n810341/n810765/n4182981/201901/c4184017/content.html
+<TaxTable month={true}/>
+
+## FAQ
+
+- Q: 年终奖单独计税一定更好吗？
+- A: 通常来说，是的。只有两种情况并非如此
+  1. 奖金数额恰好在“临界点”，详见下一条
+  2. 综合所得低于免税额度(包括起征点，转向扣除等)
+
+---
+
+- Q: 年终奖数额变多，到手反而变少了，是真的吗？
+- A: 是的。这是优惠税率的漏洞（一说为by design）。
+  - 年终奖的税按年计算，而速算扣除数用月表计算，故在税档间隙处会出现递减的情况。
+  - 具体来说，每个税档处会净亏11倍速算扣除数。例如年终奖到达36000元时，会比35999少掉 210 * 11 = 2310 元。
+
+---
+
+- Q: 十三薪应该选择并入年终奖吗？
+- A: 通常来说，是的。只有两种情况例外
+  1. 加上十三薪后会使得一次性所得超过“临界点”，这会导致额外的税收。
+  2. 年终奖数额超过综合所得应税额，反而使得综合所得税档较低。
+
+## 参考资料
+
+<ol>
+  {reference.map(e=><li key={e.name}><a href={e.url} target={'_blank'}>{e.name}</a></li>)}
+</ol>
