@@ -8,7 +8,7 @@ export const TaxCalculator = () => {
   const [config, setConfig] = useState<TaxInput>(() => ({
     income: {
       perMonth: 10000,
-      month: 12,
+      month: 13,
       other: 0,
       bonus: 30000,
     },
@@ -16,8 +16,9 @@ export const TaxCalculator = () => {
     gjj: DEFAULT_GONG_JI_JIN,
     zhuanXiang: 0,
     useBonusTax: true,
+    oneMonthToBonus: true,
   }));
-  const {income, baoXian, gjj, zhuanXiang, useBonusTax} = config;
+  const {income, baoXian, gjj, zhuanXiang, useBonusTax, oneMonthToBonus} = config;
   const result = useMemo(() => calcTax(config), [config]);
   const baoXianPerMonth = result.baoXian.reduce((a, b) => a + b.perMonth, 0);
   return (
@@ -27,6 +28,8 @@ export const TaxCalculator = () => {
         <ul>
           <li>由于社保基数按上月薪资浮动，会与实际情况有偏差</li>
           <li>社保基数上下限采用深圳2021年7月数据，最低工资{SALARY_STATS.min}，全省平均工资{SALARY_STATS.gdAvg}，深圳平均工资{SALARY_STATS.szAvg}</li>
+          <li>可支配收入 = 现金收入 + 公积金 (未计算雇主部分)</li>
+          <li>“十三薪优惠计税”选项会挪一个月薪水到年终优惠税率部分，方便我司同事</li>
           <li>数据结果仅供参考，如有BUG，欢迎评论指正</li>
         </ul>
       </div>
@@ -103,11 +106,17 @@ export const TaxCalculator = () => {
                    type={'number'}
                    unit={'元'}
                    onChange={e => setConfig(v => ({...v, zhuanXiang: Number(e.target.value)}))}/>
-            <div>年终奖单独计税:</div>
+            <div>年终奖优惠计税:</div>
             <input type={'checkbox'}
                    checked={useBonusTax}
                    className={'w-4 h-4 !m-1'}
                    onChange={e => setConfig(v => ({...v, useBonusTax: e.target.checked}))}
+            />
+            <div>十三薪优惠计税:</div>
+            <input type={'checkbox'}
+                   checked={oneMonthToBonus}
+                   className={'w-4 h-4 !m-1'}
+                   onChange={e => setConfig(v => ({...v, oneMonthToBonus: e.target.checked}))}
             />
           </div>
         </div>

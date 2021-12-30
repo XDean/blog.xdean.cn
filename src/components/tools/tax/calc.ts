@@ -15,7 +15,7 @@ function calcBaoXian(e: BaoXian, perMonthSalary: number) {
 }
 
 export function calcTax(param: TaxInput): TaxResult {
-  const {income: salary, useBonusTax} = param;
+  const {income: salary, useBonusTax, oneMonthToBonus} = param;
   const totalSalary = salary.perMonth * salary.month + salary.other;
   const income: TaxResult['income'] = {
     salary: totalSalary,
@@ -25,7 +25,7 @@ export function calcTax(param: TaxInput): TaxResult {
   const bx: TaxResult['baoXian'] = param.baoXian.map(e => calcBaoXian(e, salary.perMonth));
   const gjj: TaxResult['gjj'] = calcBaoXian(param.gjj, salary.perMonth);
 
-  const taxOrigin = income.salary + (useBonusTax ? 0 : income.bonus);
+  const taxOrigin = income.salary + (useBonusTax ? 0 : income.bonus) - (oneMonthToBonus ? salary.perMonth : 0);
   const baoXianTotal = bx.reduce((a, b) => a + b.total, 0);
   const zhuanXiangCut = param.zhuanXiang * 12;
   const thresholdCut = TAX_THRESHOLD * 12;
@@ -33,7 +33,7 @@ export function calcTax(param: TaxInput): TaxResult {
   const taxLevel = TaxMonthLevels.find(e => e.range[0] * 12 <= taxBase && e.range[1] * 12 > taxBase)!;
   const tax = taxBase * taxLevel.rate * 0.01 - taxLevel.quick * 12;
 
-  const bonusOrigin = useBonusTax ? income.bonus : 0;
+  const bonusOrigin = (useBonusTax ? income.bonus : 0) + (oneMonthToBonus ? salary.perMonth : 0);
   const bonusDiff = Math.max(0, TAX_THRESHOLD - salary.perMonth);
   const bonusBase = Math.max(0, bonusOrigin / 12 - bonusDiff);
   const bonusLevel = TaxMonthLevels.find(e => e.range[0] <= bonusBase && e.range[1] > bonusBase)!;

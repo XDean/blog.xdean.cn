@@ -21,6 +21,7 @@ export type TaxInput = {
   gjj: BaoXian
   zhuanXiang: number
   useBonusTax: boolean
+  oneMonthToBonus: boolean
 }
 
 export type TaxResult = {
