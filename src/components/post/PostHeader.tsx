@@ -1,4 +1,3 @@
-import {Like as LikeState, Read as ReadState} from 'common/api/impl/domain';
 import {Comment} from 'common/components/badge/Comment';
 import {Like} from 'common/components/badge/Like';
 import {Print} from 'common/components/badge/Print';
@@ -8,8 +7,7 @@ import {isSSR} from 'common/util/next';
 import {format} from 'date-fns';
 import React, {useCallback} from 'react';
 import {PostMeta} from 'src/domain';
-import useSWR from 'swr';
-import {fetchJsonApi} from '../../../common/util/fetch';
+import {likePost, usePostLike, usePostRead} from '../../api';
 
 export type Props = {
   meta: PostMeta
@@ -32,8 +30,8 @@ export const PostHeader = ({meta}: Props) => {
         {meta.tags.map(c => <Tag key={c} text={c}/>)}
       </div>
       <div className={'space-x-2'}>
-        <ReadButton postId={meta.path}/>
-        <LikeButton postId={meta.path}/>
+        <ReadButton meta={meta}/>
+        <LikeButton meta={meta}/>
         <CommentButton/>
         <div className={'hidden md:inline-block'}>
           <PrintButton/>
@@ -43,18 +41,16 @@ export const PostHeader = ({meta}: Props) => {
   );
 };
 
-const LikeButton = ({postId}: { postId: string }) => {
-  const like = useSWR<LikeState>(`/api/like?postId=${postId}`, fetchJsonApi);
+const LikeButton = ({meta}: { meta: PostMeta }) => {
+  const like = usePostLike(meta);
   const onLike = useCallback(() => {
-    fetch(`/api/like?postId=${postId}&value=${(like.data?.you || 0) === 0}`, {
-      method: 'POST',
-    })
+    likePost(meta, !(like.data?.you ?? false))
       .then(() => like.mutate());
     like.mutate(l => l === undefined ? {total: 1, you: true} : ({
       total: l.you ? l.total - 1 : l.total + 1,
       you: !l.you,
     }), false);
-  }, [like, postId]);
+  }, [like, meta]);
   return (
     <Like total={like.data?.total || 0}
           like={!!like.data?.you}
@@ -64,8 +60,8 @@ const LikeButton = ({postId}: { postId: string }) => {
   );
 };
 
-const ReadButton = ({postId}: { postId: string }) => {
-  const read = useSWR<ReadState>(`/api/read?postId=${postId}`, fetchJsonApi);
+const ReadButton = ({meta}: { meta: PostMeta }) => {
+  const read = usePostRead(meta);
   return (
     <Read total={<div title={`${read.data?.total}`}>{read.data?.unique_total}</div> || 0}
           loading={read.data === undefined}
