@@ -3,8 +3,8 @@ import {Like as LikeState, Read as ReadState} from '../common/api/impl/domain';
 import {fetchJsonApi} from '../common/util/fetch';
 import {PostMeta} from './domain';
 
-export function usePostRead(meta: PostMeta) {
-  return useSWR<ReadState>(`/api/read?postId=${meta.path}`, fetchJsonApi);
+export function usePostRead(meta: PostMeta, add: boolean = true) {
+  return useSWR<ReadState>(`/api/read?postId=${meta.path}&add=${add}`, fetchJsonApi);
 }
 
 export function usePostLike(meta: PostMeta) {

@@ -1,17 +1,20 @@
-import {format} from 'date-fns'
+import clsx from 'clsx';
+import Image from 'common/components/Image';
+import {Tag} from 'common/components/Tag';
+import {format} from 'date-fns';
 import Link from 'next/link';
-import React from "react";
-import {PostMeta} from "src/domain";
-import {Tag} from "common/components/Tag";
-import Image from "common/components/Image";
-import clsx from "clsx";
+import React from 'react';
+import {PostMeta} from 'src/domain';
+import {usePostLike, usePostRead} from '../../api';
 
 type Props = {
   meta: PostMeta
 }
 
 export const PostCard = (props: Props) => {
-  const {meta} = props
+  const {meta} = props;
+  const read = usePostRead(meta, false);
+  const like = usePostLike(meta);
   return (
     <div
       className={clsx(
@@ -19,12 +22,17 @@ export const PostCard = (props: Props) => {
         'group rounded border border-gray-300 flex flex-row',
         'hover:ring hover:shadow-lg hover:translate-x-2')}>
       <div className={'flex flex-col w-8/12 flex-grow p-2 md:p-4'}>
-        <div className={'text-xl md:text-3xl group-hover:underline'}>
+        <div>
           <Link href={`/posts/${meta.link}`}>
-            <a>
+            <a className={'text-xl md:text-3xl group-hover:underline'}>
               {meta.title}
             </a>
           </Link>
+          {read.data && (
+            <div className={'inline text-sm md:text-base ml-2 whitespace-nowrap'}>
+              {read.data.unique_total} 阅读 {like.data && like.data.total > 0 && `${like.data.total} 喜欢`}
+            </div>
+          )}
         </div>
         <div className={'mt-1 md:mt-2 space-x-1'}>
           <div className={'inline-block whitespace-nowrap'}>
@@ -51,5 +59,5 @@ export const PostCard = (props: Props) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
