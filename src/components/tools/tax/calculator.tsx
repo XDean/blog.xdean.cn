@@ -1,8 +1,8 @@
-import {DetailedHTMLProps, Fragment, InputHTMLAttributes, useMemo, useState} from 'react';
-import {calcTax} from './calc';
+import { DetailedHTMLProps, Fragment, InputHTMLAttributes, useMemo, useState } from 'react';
+import { calcTax } from './calc';
 import css from './calculator.module.css';
-import {DEFAULT_BAO_XIAN, DEFAULT_GONG_JI_JIN, SALARY_STATS, TAX_THRESHOLD} from './data';
-import {TaxInput} from './types';
+import { DEFAULT_BAO_XIAN, DEFAULT_GONG_JI_JIN, SALARY_STATS, TAX_THRESHOLD } from './data';
+import { TaxInput } from './types';
 
 export const TaxCalculator = () => {
   const [config, setConfig] = useState<TaxInput>(() => ({
@@ -187,7 +187,8 @@ export const TaxCalculator = () => {
               </ul>
               <li>公积金: {format(result.gjj.base)} * {result.gjj.rate}% = {format(result.gjj.perMonth)}</li>
               <li>起征点: {format(TAX_THRESHOLD)}</li>
-              <li>共计: {format(baoXianPerMonth + result.gjj.perMonth + TAX_THRESHOLD)}</li>
+              <li>专项扣除: {format(zhuanXiang)}</li>
+              <li>共计: {format(baoXianPerMonth + result.gjj.perMonth + TAX_THRESHOLD + zhuanXiang)}</li>
             </ul>
           </li>
           <li>
@@ -196,7 +197,7 @@ export const TaxCalculator = () => {
               <li>综合所得
                 <ul>
                   <li>总计: {format(result.tax.salary.origin)}</li>
-                  <li>应税额: {format(result.tax.salary.origin)} - {format(baoXianPerMonth + result.gjj.perMonth + TAX_THRESHOLD)} *
+                  <li>应税额: {format(result.tax.salary.origin)} - {format(baoXianPerMonth + result.gjj.perMonth + TAX_THRESHOLD + zhuanXiang)} *
                     12 = {format(result.tax.salary.base)}</li>
                   <li>税档: {result.tax.salary.level.rate}%</li>
                   <li>税额: {format(result.tax.salary.tax)}</li>

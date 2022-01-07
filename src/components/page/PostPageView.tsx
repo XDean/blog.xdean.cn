@@ -6,6 +6,7 @@ import {Pagination} from "../../../common/components/Pagination";
 type Props = {
   page: Page<PostMeta>
 }
+
 export const PostPageView = (props: Props) => {
   const {page} = props
   return (
