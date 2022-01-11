@@ -15,11 +15,11 @@
 }
 
 .inputContainer {
-    @apply flex flex-col md:flex-row space-y-4 divide-y md:space-y-0 md:divide-y-0 md:space-x-8 md:divide-x;
+    @apply flex flex-col lg:flex-row space-y-4 divide-y lg:space-y-0 lg:divide-y-0 lg:space-x-8 lg:divide-x;
 }
 
 .inputContainer > *:not(:first-child) {
-    @apply pt-4 md:pt-0 md:pl-8;
+    @apply pt-4 lg:pt-0 lg:pl-8;
 }
 
 .resultContainer {
@@ -51,7 +51,7 @@
 }
 
 .form_table {
-    @apply grid gap-2;
+    @apply grid gap-2 mx-auto w-max;
     grid-template-columns: max-content max-content;
 }
 
