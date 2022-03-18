@@ -30,7 +30,7 @@ export const PostCard = (props: Props) => {
           </Link>
           {read.data && (
             <div className={'inline text-sm md:text-base ml-2 whitespace-nowrap'}>
-              {read.data.unique_total} 阅读 {like.data && like.data.total > 0 && `${like.data.total} 喜欢`}
+              {read.data.total} 阅读 {like.data && like.data.total > 0 && `${like.data.total} 喜欢`}
             </div>
           )}
         </div>

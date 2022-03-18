@@ -63,7 +63,7 @@ const LikeButton = ({meta}: { meta: PostMeta }) => {
 const ReadButton = ({meta}: { meta: PostMeta }) => {
   const read = usePostRead(meta);
   return (
-    <Read total={<div title={`${read.data?.total}`}>{read.data?.unique_total}</div> || 0}
+    <Read total={<div title={`${read.data?.unique_total}`}>{read.data?.total}</div> || 0}
           loading={read.data === undefined}
     />
   );
