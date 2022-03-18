@@ -1,0 +1,217 @@
+import {postMeta} from "src/domain";
+import logo from './logo.png'
+import Image  from 'next/image'
+
+export const meta = postMeta({
+  date: '2022-03-17',
+  image: logo,
+  tags: ['Electron', 'ERB', 'React'],
+  categories: ['Coding'],
+})
+
+# 详解 Electron React Boilerplate
+
+<div className={'max-w-[200px]'}>
+  <Image src={logo}/>
+</div>
+
+Electron是基于Javascript构建桌面应用的框架。
+而React是最流行的Javascript UI库。
+
+为了能在Electron框架下更好地使用React，于是就有了
+[Electron React Boilerplate](https://electron-react-boilerplate.js.org/)。
+
+**本文基于ERB-4.5.0版本。**
+
+## 特性
+
+ERB集成了丰富的特性，包括但不限于
+
+- webpack
+  - asset import
+  - dead code stripping
+  - tree shaking
+- electron-rebuild
+- electron-builder
+- typescript
+- babel
+- lint
+- jest
+
+这些内容都可以在官方文档中找到怎样使用，本文将不再赘述。
+
+下面将详细讲解ERB的整体流程和各个组件如何协作，重在WHY，而不止于HOW。
+
+## scripts
+
+使用ERB，主要有3个script会被直接用到，分别是`start`, `build`, `package`。
+我们就每个script展开讲解。
+
+### start
+
+`start`用于以开发模式启动
+
+```bash
+ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer
+```
+
+第一步，ERB会检查端口使用，如果被占用则会给出警告并退出。
+
+接着，ERB会调用`start:renderer`
+
+```bash
+cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts
+```
+
+该命令调用了webpack启动dev server，配置文件位于`./.erb/configs/webpack.config.renderer.dev.ts`。
+在这个config中主要配置了
+
+- Loader for CSS/Font/Image
+- [HTMLWebpackPlugin](https://www.webpackjs.com/plugins/html-webpack-plugin/) 用于生成index.html
+- [DLLPlugin](https://www.webpackjs.com/plugins/dll-plugin/) 用于构建dll加快开发编译
+- [ReactRefreshWebpackPlugin](https://github.com/pmmmwh/react-refresh-webpack-plugin) 用于React快速刷新
+
+在配置的最后`onBeforeSetupMiddleware`中，其又调用了`npm run start:main`以启动主进程。
+
+```bash
+cross-env NODE_ENV=development electron -r ts-node/register/transpile-only ./src/main/main.ts
+```
+
+主进程直接运行`electron`加载`main.ts`。在`main.ts`中创建了主窗口并加载了`localhost:1212/index.html`，即上面运行的dev server。
+
+### build
+
+`build`脚本用于构建生产用的bundle。
+
+```bash
+concurrently "npm run build:main" "npm run build:renderer"
+```
+
+它并行地运行`build:main`和`build:renderer`两个脚本。
+
+**build:main**
+
+```bash
+cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.prod.ts
+```
+
+在`./.erb/configs/webpack.config.main.prod.ts`文件中，主要配置了
+
+- [TerserPlugin](https://webpack.docschina.org/plugins/terser-webpack-plugin/) 用于压缩bundle.js
+- [BundleAnalyzerPlugin](https://github.com/webpack-contrib/webpack-bundle-analyzer) 用于分析bundle
+- 输出文件位于`release/app/dist/main`
+
+**build:renderer**
+
+
+```bash
+cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts
+```
+
+在`./.erb/configs/webpack.config.renderer.prod.ts`中主要配置了
+
+- 与`start`类似的
+  - loader
+  - HTMLWebpackPlugin
+- 与`build:main`类似的
+  - TerserPlugin
+  - BundleAnalyzerPlugin
+- 输出文件位于`release/app/dist/renderer`
+
+### package
+
+`package`脚本用于打包最终的binary
+
+```bash
+ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never
+```
+
+它首先会掉`npm run build`来构建bundle，然后运行`electron-builder`，其会根据`package.json`中的配置进行打包。
+
+- app路径为`release/app`
+- 主入口为`./dist/main/main.js`，即`build`阶段构建的main bundle。
+- 代码文件会通过`asar`格式进行归档
+- windows会使用[nsis](https://en.wikipedia.org/wiki/Nullsoft_Scriptable_Install_System)打包最终安装包
+- 打包结果位于`release/build` (windows为exe安装程序)
+
+## 结构
+
+在了解了主要的scripts之后，我们应该对整个开发构建流程有了清晰的认识。
+同时也会有一些新的问题，例如，还有一个没有讲解的`postinstall`脚本以及略显突兀的`release/app`文件夹。
+
+### 双package.json
+
+electron最终的binary会使用特定的electron-node而非标准版node，所以从npm获取到的原生native依赖无法正常运行。
+为了能够在electron上使用这些native模块，我们需要对于electron重新构建。
+
+这就需要用到`electron-rebuild`。
+
+electron-rebuild提倡使用[双package.json结构](https://www.electron.build/tutorials/two-package-structure.html)以区分依赖和开发期依赖。
+
+而ERB，由于需要使用webpack打包代码，又进一步对该结构进行了变种。
+
+### postinstall
+
+在`package.json`中，还定义了`postinstall`脚本，它会在每次`npm install`之后触发。
+
+```bash
+ts-node .erb/scripts/check-native-dep.js
+&& electron-builder install-app-deps
+&& cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts
+```
+
+首先我们调用了`check-native-dep.js`脚本以检查原生依赖，如果在`package.json`中定义了非dev的native依赖，则会报错退出。
+
+接着，我们又调用了`electron-builder install-app-deps`。
+这会自动进入`release/app`目录执行`install`。
+
+现在，我们进入到`release/app/package.json`，可以看到，它也有一个`postinstall`调用。
+
+```json
+{
+"electron-rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+"link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts",
+"postinstall": "npm run electron-rebuild && npm run link-modules"
+}
+```
+
+- 首先调用`electron-rebuild`对原生模组进行了重新构建。
+- 然后调用`link-modules`把`release/app/node_modules`链接到`src/node_modules`，这样我们在`src`中的源代码也就能使用原生依赖了。
+
+最后，在完成了`install-app-deps`之后，还调用了webpack构建dll以加快开发期速度。
+
+### 添加依赖
+
+综合上面两小节，我们了解了ERB的改进版双package.json结构。
+在实践中，当我们需要添加依赖项时，只需要遵循一个原则。
+
+非dev原生(或有原生依赖)依赖项，需要定义在`release/app/package.json`
+
+### 例外
+
+ERB的结构在开发和生产构建下都运行良好，但是仍有一些特殊情况无法处理。
+
+当我们在测试中需要使用到原生模块时，会得到如下错误。
+
+```text
+The module XXX was compiled against a different Node.js version using
+NODE_MODULE_VERSION 99. This version of Node.js requires
+NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
+```
+
+原因是，native依赖已经被electron重新编译，无法适应你本地的node binary。
+要解决这一问题，有一种方法和一种workaround，
+
+一种方法是，使用electron来运行测试，详见[此Stackoverflow](https://stackoverflow.com/questions/44164862/run-jest-with-electron-instead-of-node)。
+这种做法的问题是，与IDE无法集成，测试结果只可以在命令行上看，而且当需要运行单个用例时也只能自己写command。
+
+一种workaround是，当focus在单元测试而不需要运行electron时，阻止electron重新编译native依赖，这样就可以直接用node运行测试。
+这一方法的缺点是需要手动切换环境。
+
+## 结尾
+
+至此，我们已经厘清了ERB中所有结构和流程。
+
+在ERB中还有一些边角料(如lint,husky)和无用信息(如`.github`, `.vscode`以及`package.json`中的多余内容)，你可以酌情自行删除。
+
+在搞清楚了来龙去脉之后，你就可以轻松地开始编写Electron React应用了。
