@@ -6,7 +6,7 @@ import {useRouter} from 'next/router';
 import {useGA} from '../common/util/ga';
 import {CONSTANT} from '../src/constants';
 import {DefaultSeo} from 'next-seo';
-import {isDEV} from '../common/util/env';
+import {BaiduAnalytics} from '../common/util/analytics/baidu';
 
 function MyApp({Component, pageProps}: AppProps) {
   const router = useRouter();
@@ -18,17 +18,8 @@ function MyApp({Component, pageProps}: AppProps) {
         titleTemplate={'%s | XDean'}
       />
       <Head>
-        <title>XDean NextJS Template</title>
-        {!isDEV && <script dangerouslySetInnerHTML={{
-          __html: `var _hmt = _hmt || [];
-(function () {
-  var hm = document.createElement("script");
-  hm.src = "https://hm.baidu.com/hm.js?18ff7e79ef1c492ff64063605453b2f4";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(hm, s);
-})();
-`,
-        }}/>}
+        <title>XDean的博客</title>
+        <BaiduAnalytics id={'18ff7e79ef1c492ff64063605453b2f4'}/>
       </Head>
       {function () {
         if (router && router.query.layout === 'false') {
