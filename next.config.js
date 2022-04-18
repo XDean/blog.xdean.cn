@@ -28,6 +28,7 @@ module.exports = withPlugins([
                   plugins: [
                     'line-numbers',
                     'treeview',
+                    'diff-highlight',
                   ]
                 }]
               ],

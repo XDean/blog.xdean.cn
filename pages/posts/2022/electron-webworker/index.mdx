@@ -1,0 +1,259 @@
+import {postMeta} from "src/domain";
+import logo from './logo.jpeg'
+
+export const meta = postMeta({
+  date: '2022-04-11',
+  image: logo,
+  tags: ['Electron', 'Node.js', 'Webpack'],
+  categories: ['Coding'],
+})
+
+# Electron使用worker_thread多线程
+
+JS以其单线程事件循环模型在UI和IO密集型应用中有着很好的表现相性。
+但是当我们用Electron构建桌面应用时，不可避免地需要进行某些CPU密集的任务。
+
+为了解决JS多线程的问题，WebWorker应运而生([MDN WebWorker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API))。
+WebWorker是独立的工作者线程，它与主线程不共享任何状态，只通过事件通信。
+
+类似的，在Node世界中，标准库为我们提供了`worker_threads`模块，其实现了与WebWorker相同的工作者。[DOC](https://nodejs.org/api/worker_threads.html)
+
+本文将介绍`worker_threads`的使用，以及结合ERB讲解如何在项目中让worker平稳地渡过整个构建周期，与TS,Webpack等构建工具适配。
+
+关于ERB的相关知识，可以参考[我的上一篇博客](./erb)
+
+## 基本用法
+
+WebWorker的使用非常简单，只需要创建一个`Worker`对象并指定js脚本，工作者线程就已经启动了。
+
+下面是官方文档给出的一个示例
+
+```js
+const {
+  Worker, isMainThread, parentPort, workerData
+} = require('worker_threads');
+
+if (isMainThread) {
+  module.exports = function parseJSAsync(script) {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(__filename, {
+        workerData: script
+      });
+      worker.on('message', resolve);
+      worker.on('error', reject);
+      worker.on('exit', (code) => {
+        if (code !== 0)
+          reject(new Error(`Worker stopped with exit code ${code}`));
+      });
+    });
+  };
+} else {
+  const { parse } = require('some-js-parsing-library');
+  const script = workerData;
+  parentPort.postMessage(parse(script));
+}
+```
+
+- 这个例子把主线程和工作线程写到了同一个文件里。
+- 首先判断当前线程是否是主线程
+  - 如果是主线程，则导出一个函数
+    - 该函数返回一个Promise
+    - 其创建了`Worker`来执行任务，并通过`workerData`提供了参数
+    - 通过`worker`对象的事件监听，来执行对应的`resolve`和`reject`
+  - 如果是工作线程，则开始工作
+    - 从`workerData`中取得参数
+    - 执行任务后将结果`postMessage`到主线程
+
+## 集成到ERB
+
+上面简单的例子展示了`worker_thread`的基本用法，但是应用到实际Electron项目中却远远不够。
+
+因为从原始代码到最终打包经历了数个环节，typescript/webpack/electron-builder都会对代码和结构产生影响。
+
+首先，我们在项目中创建测试用的worker脚本`src/main/worker/debug.ts`。
+
+```ts
+import { threadId, workerData } from 'worker_threads';
+
+const end = Date.now() + workerData;
+
+while (Date.now() < end) {
+}
+
+console.log(`worker done: ${threadId}`);
+```
+
+下面的内容都会以此脚本为例展开。
+
+### Typescript
+
+在开发期间，我们的代码用Typescript编写，并且还未转译为JS代码。
+此时如果把ts文件直接提交给`Worker`是不可行的。
+
+我们需要用到`ts-node`模块，它可以让我们在运行时加载ts脚本。
+
+同时，我们可以使用`Worker`初始化的`eval`选项来提交js代码而非js文件。
+在其中加载`ts-node`和目标脚本。这样就可以不修改原worker脚本。
+
+```ts
+import { Worker } from 'worker_threads';
+
+new Worker('debug.ts', {workerData: 1000}); // wrong
+
+new Worker(`
+require('ts-node').register();
+require('debug.ts')
+`, {
+  workerData: 1000,
+  eval: true,
+});
+```
+
+这一操作我们只需要在开发模式使用，生产模式会使用转译后的js文件。所以我们可以可以提取一个工具方法如下。
+
+```ts
+import { Worker, WorkerOptions } from 'worker_threads';
+
+export function newWorker(name: string, options: WorkerOptions = {}) {
+  if (process.env.NODE_ENV === 'development') {
+    return new Worker(`
+    require('ts-node').register();
+    require('${name}.ts')
+    `, {
+      ...options,
+      eval: true,
+    });
+  } else {
+    return new Worker(`${name}.js`, options);
+  }
+}
+```
+
+### Webpack
+
+在ERB中我们使用了webpack来打包最终的JS文件。
+默认的入口只有`main.ts`和`preload.js`。
+这就使得我们最终的build里根本就没有`debug.js`文件，`Worker`自然也就无法正确启动。
+
+所以，我们需要把所有工作脚本都添加到webpack的配置当中。
+
+在我的实践当中，我把所有工作脚本都放到了`src/main/worker`文件夹，该文件夹中有且仅有工作脚本。
+
+在`webpack.config.main.prod.ts`中，添加了如下代码。
+
+```ts
+import glob from 'glob';
+
+const workerEntries: Record<string, string> = {};
+glob.sync(webpackPaths.srcMainWorkerPath + '/*.ts')
+  .forEach(e => {
+    const name = path.parse(e).name;
+    workerEntries[`worker/${name}`] = path.join(webpackPaths.srcMainPath, `worker/${name}.ts`);
+  });
+
+const configuration: webpack.Configuration = {
+  //...
+  entry: {
+    main: path.join(webpackPaths.srcMainPath, 'main.ts'),
+    preload: path.join(webpackPaths.srcMainPath, 'preload.js'),
+    ...workerEntries,
+  },
+  //...
+}
+```
+
+配置完成后，再次调用`npm run build`构建，就会发现在`release/app/dist/main`文件夹下已经有了`worker`目录及工作脚本了。
+
+### asar
+
+虽然build已经通过，但是在最终package中却依然不能使用。
+原因是electron-builder默认开启了asar压缩。
+worker没有办法找到我们的js文件。
+
+为此，我们需要配置asar忽略这些文件。
+
+```diff
+  {
+    "build": {
+      "asar": true,
+      "asarUnpack": [
+        "**\\*.{node,dll}",
++       "dist\\main\\worker\\*.js"
+      ],
+    }
+  }
+```
+
+### path
+
+在上两小节`webpack`和`asar`中都隐藏了一些关于路径的问题。
+
+- webpack打包后主线程只存在`main.js`，与开发期路径不一致
+- asar打包后，其他代码在`app.asar`中，而工作脚本在`app.asar.unpacked`中
+
+所以，我们需要对上面定义的工具方法稍作改造，让它能够在生产模式中兼容。
+
+```ts
+import path from 'path';
+import { Worker, WorkerOptions } from 'worker_threads';
+
+export function newWorker(name: string, options: WorkerOptions = {}) {
+  if (process.env.NODE_ENV === 'development') {
+    const tsFile = path.resolve(path.join(__dirname, `../worker/${name}.ts`)).replace(/\\/g, '/');
+    return new Worker(`
+    require('ts-node').register();
+    require('${tsFile}')
+    `, {
+      ...options,
+      eval: true,
+    });
+  } else {
+    const jsFile = path.resolve(path.join(__dirname, `./worker/${name}.js`))
+      .replace('app.asar', 'app.asar.unpacked');
+    return new Worker(jsFile, options);
+  }
+}
+```
+
+现在，终于算是大功告成，我们的工具方法可以在开发模式和生产模式下完美兼容。
+让worker的使用变得非常简单。
+
+```ts
+import { newWorker } from './util/worker'
+
+const worker = newWorker('debug', {
+  workerData: millis,
+});
+```
+
+## 插曲：原生模块
+
+本想事情到此告一段落，可是天不遂人愿，又或者说是幸运的发现了一个问题。
+在项目中，我使用了node-expat来解析XML文件，这是一个C++编写的原生模块。
+
+当我在worker中测试使用该模块时，发生了类似如下错误。
+
+```text
+Error: Module did not self-register.
+    at Object.Module._extensions..node (internal/modules/cjs/loader.js:731:18)
+    at Module.load (internal/modules/cjs/loader.js:612:32)
+    at tryModuleLoad (internal/modules/cjs/loader.js:551:12)
+    at Function.Module._load (internal/modules/cjs/loader.js:543:3)
+```
+
+为了搞清楚原因，我就单独写了一个js文件，脱离electron测试。奇怪的是，在单独测试的worker中可以正常加载node-expat并解析XML。
+
+在经过了反复的尝试和资料的查找后，终于定位了原因。
+NodeJS原生模块需要启用[context aware](https://nodejs.org/docs/latest-v10.x/api/addons.html#addons_context_aware_addons)才能在一条进程中多次加载。
+详见该[Issue](https://github.com/nodejs/node/issues/21481)
+
+在我的测试中不报错就是因为我在测试中只在worker中使用了，如果在主进程加入一行require，则能够重现该错误。
+
+在`node-expact`库中有人在两年前提交了`context aware`功能的改动(只需要修改一行)，但是由于没有测试用例，该PR很遗憾地被关闭了。
+
+对于这种情况，恐怕就只能选用非原生模块或者是兼容的原生模块了。（我后来选用了sax模块替换node-expat）
+
+## 结语
+
+本文以ERB为例，详细讲解和演示了worker_thread的用法。
+即使你不使用ERB，使用其他的框架，其涉及的工具也都大同小异，可以用相同的思路逐一攻破。
