@@ -25,6 +25,7 @@ export type TaxInput = {
 }
 
 export type TaxResult = {
+  month: number
   income: {
     salary: number
     bonus: number

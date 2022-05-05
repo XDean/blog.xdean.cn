@@ -41,6 +41,7 @@ export function calcTax(param: TaxInput): TaxResult {
   const bonusTax = Math.max(0, bonusOrigin - bonusDiff) * bonusLevel.rate * 0.01 - bonusLevel.quick;
 
   return {
+    month,
     income: income,
     baoXian: bx,
     gjj: gjj,

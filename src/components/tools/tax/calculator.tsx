@@ -1,8 +1,8 @@
-import { DetailedHTMLProps, Fragment, InputHTMLAttributes, useMemo, useState } from 'react';
-import { calcTax } from './calc';
+import {DetailedHTMLProps, Fragment, InputHTMLAttributes, useMemo, useState} from 'react';
+import {calcTax} from './calc';
 import css from './calculator.module.css';
-import { DEFAULT_BAO_XIAN, DEFAULT_GONG_JI_JIN, SALARY_STATS, TAX_THRESHOLD } from './data';
-import { TaxInput } from './types';
+import {DEFAULT_BAO_XIAN, DEFAULT_GONG_JI_JIN, SALARY_STATS, TAX_THRESHOLD} from './data';
+import {TaxInput} from './types';
 
 export const TaxCalculator = () => {
   const [config, setConfig] = useState<TaxInput>(() => ({
@@ -170,7 +170,7 @@ export const TaxCalculator = () => {
           <li>
             收入
             <ul>
-              <li>薪资: {format(config.income.perMonth)} * {config.income.month} + {format(config.income.other)} = {format(result.income.salary)}</li>
+              <li>综合: {format(config.income.perMonth)} * {config.income.month} + {format(config.income.other)} = {format(result.income.salary)}</li>
               <li>奖金: {format(config.income.bonus)}</li>
               <li>共计: {format(result.total.income)}</li>
             </ul>
@@ -186,9 +186,9 @@ export const TaxCalculator = () => {
                 <li>共计: {format(baoXianPerMonth)}</li>
               </ul>
               <li>公积金: {format(result.gjj.base)} * {result.gjj.rate}% = {format(result.gjj.perMonth)}</li>
-              <li>起征点: {format(TAX_THRESHOLD)}</li>
               <li>专项扣除: {format(zhuanXiang)}</li>
-              <li>共计: {format(baoXianPerMonth + result.gjj.perMonth + TAX_THRESHOLD + zhuanXiang)}</li>
+              <li>共计: {format(baoXianPerMonth + result.gjj.perMonth + zhuanXiang)}</li>
+              <li>年共计: {format(result.month * (baoXianPerMonth + result.gjj.perMonth + zhuanXiang))}</li>
             </ul>
           </li>
           <li>
@@ -197,10 +197,12 @@ export const TaxCalculator = () => {
               <li>综合所得
                 <ul>
                   <li>总计: {format(result.tax.salary.origin)}</li>
-                  <li>应税额: {format(result.tax.salary.origin)} - {format(baoXianPerMonth + result.gjj.perMonth + TAX_THRESHOLD + zhuanXiang)} *
-                    12 = {format(result.tax.salary.base)}</li>
+                  <li>应税额: {format(result.tax.salary.origin)} - {TAX_THRESHOLD * 12}
+                    {''} - {format(baoXianPerMonth + result.gjj.perMonth + zhuanXiang)} *
+                    {''} {result.month} = {format(result.tax.salary.base)}</li>
                   <li>税档: {result.tax.salary.level.rate}%</li>
-                  <li>税额: {format(result.tax.salary.tax)}</li>
+                  <li>税额: {format(result.tax.salary.base)} * {result.tax.salary.level.rate}%
+                    {''} - {result.tax.salary.level.quick * 12} = {format(result.tax.salary.tax)}</li>
                 </ul>
               </li>
               {result.tax.bonus.origin > 0 && (
@@ -210,7 +212,8 @@ export const TaxCalculator = () => {
                     <li>总计: {format(result.tax.bonus.origin)}</li>
                     <li>应税额(月): {format(result.tax.bonus.base)}</li>
                     <li>税档: {result.tax.bonus.level.rate}%</li>
-                    <li>税额: {format(result.tax.bonus.tax)}</li>
+                    <li>税额: {format(result.tax.bonus.origin)} * {result.tax.bonus.level.rate}%
+                      {''} - {result.tax.bonus.level.quick} = {format(result.tax.bonus.tax)}</li>
                   </ul>
                 </li>
               )}
@@ -231,7 +234,7 @@ export const TaxCalculator = () => {
   );
 };
 
-const Input = ({unit = '', ...rest}: { unit?: string }
+const Input = ({unit = '', ...rest}: {unit?: string}
   & DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>) => {
   return (
     <div className={'inline-flex items-center space-x-1'}>
@@ -241,7 +244,7 @@ const Input = ({unit = '', ...rest}: { unit?: string }
   );
 };
 
-const Yuan = ({value}: { value: number }) => {
+const Yuan = ({value}: {value: number}) => {
   return (
     <div className={'text-right'}>
       {format(value)} 元
