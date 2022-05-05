@@ -1,7 +1,7 @@
 import {TAX_THRESHOLD, TaxMonthLevels} from './data';
 import {BaoXian, TaxInput, TaxResult} from './types';
 
-function calcBaoXian(e: BaoXian, perMonthSalary: number) {
+function calcBaoXian(e: BaoXian, perMonthSalary: number, month: number) {
   const base = typeof e.base == 'number' ? e.base
     : Math.min(e.base[1], Math.max(e.base[0], perMonthSalary));
   const perMonth = base * e.rate * 0.01;
@@ -10,7 +10,7 @@ function calcBaoXian(e: BaoXian, perMonthSalary: number) {
     base: base,
     rate: e.rate,
     perMonth: perMonth,
-    total: perMonth * 12,
+    total: perMonth * month,
   };
 }
 
@@ -22,12 +22,13 @@ export function calcTax(param: TaxInput): TaxResult {
     bonus: salary.bonus,
     total: totalSalary + salary.bonus,
   };
-  const bx: TaxResult['baoXian'] = param.baoXian.map(e => calcBaoXian(e, salary.perMonth));
-  const gjj: TaxResult['gjj'] = calcBaoXian(param.gjj, salary.perMonth);
+  const month = Math.min(param.income.month, 12);
+  const bx: TaxResult['baoXian'] = param.baoXian.map(e => calcBaoXian(e, salary.perMonth, month));
+  const gjj: TaxResult['gjj'] = calcBaoXian(param.gjj, salary.perMonth, month);
 
   const taxOrigin = income.salary + (useBonusTax ? 0 : income.bonus) - (oneMonthToBonus ? salary.perMonth : 0);
   const baoXianTotal = bx.reduce((a, b) => a + b.total, 0);
-  const zhuanXiangCut = param.zhuanXiang * 12;
+  const zhuanXiangCut = param.zhuanXiang * month;
   const thresholdCut = TAX_THRESHOLD * 12;
   const taxBase = Math.max(0, taxOrigin - baoXianTotal - gjj.total - zhuanXiangCut - thresholdCut);
   const taxLevel = TaxMonthLevels.find(e => e.range[0] * 12 <= taxBase && e.range[1] * 12 > taxBase)!;
