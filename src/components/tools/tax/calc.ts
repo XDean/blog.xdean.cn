@@ -15,18 +15,20 @@ function calcBaoXian(e: BaoXian, perMonthSalary: number, month: number) {
 }
 
 export function calcTax(param: TaxInput): TaxResult {
-  const {income: salary, useBonusTax, oneMonthToBonus} = param;
-  const totalSalary = salary.perMonth * salary.month + salary.other;
+  const {income: salary, useBonusTax, useBonusTax13} = param;
+  const salary13 = salary.month13 ? salary.perMonth : 0;
+  const totalSalary = salary.perMonth * salary.month + salary.other + (!useBonusTax13 ? salary13 : 0);
+  const totalBonus = salary.bonus + (useBonusTax13 ? salary13 : 0);
   const income: TaxResult['income'] = {
     salary: totalSalary,
-    bonus: salary.bonus,
-    total: totalSalary + salary.bonus,
+    bonus: totalBonus,
+    total: totalSalary + totalBonus,
   };
-  const month = Math.min(param.income.month, 12);
+  const month = Math.max(0, Math.min(param.income.month, 12));
   const bx: TaxResult['baoXian'] = param.baoXian.map(e => calcBaoXian(e, salary.perMonth, month));
   const gjj: TaxResult['gjj'] = calcBaoXian(param.gjj, salary.perMonth, month);
 
-  const taxOrigin = income.salary + (useBonusTax ? 0 : income.bonus) - (oneMonthToBonus ? salary.perMonth : 0);
+  const taxOrigin = income.salary + (useBonusTax ? 0 : income.bonus);
   const baoXianTotal = bx.reduce((a, b) => a + b.total, 0);
   const zhuanXiangCut = param.zhuanXiang * month;
   const thresholdCut = TAX_THRESHOLD * 12;
@@ -34,7 +36,7 @@ export function calcTax(param: TaxInput): TaxResult {
   const taxLevel = TaxMonthLevels.find(e => e.range[0] * 12 <= taxBase && e.range[1] * 12 > taxBase)!;
   const tax = taxBase * taxLevel.rate * 0.01 - taxLevel.quick * 12;
 
-  const bonusOrigin = (useBonusTax ? income.bonus : 0) + (oneMonthToBonus ? salary.perMonth : 0);
+  const bonusOrigin = (useBonusTax ? income.bonus : 0);
   const bonusDiff = Math.max(0, TAX_THRESHOLD - salary.perMonth);
   const bonusBase = Math.max(0, bonusOrigin / 12 - bonusDiff);
   const bonusLevel = TaxMonthLevels.find(e => e.range[0] <= bonusBase && e.range[1] > bonusBase)!;

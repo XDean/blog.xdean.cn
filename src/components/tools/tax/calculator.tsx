@@ -8,17 +8,18 @@ export const TaxCalculator = () => {
   const [config, setConfig] = useState<TaxInput>(() => ({
     income: {
       perMonth: 10000,
-      month: 13,
+      month: 12,
       other: 0,
       bonus: 30000,
+      month13: true,
     },
     baoXian: DEFAULT_BAO_XIAN,
     gjj: DEFAULT_GONG_JI_JIN,
     zhuanXiang: 0,
     useBonusTax: true,
-    oneMonthToBonus: true,
+    useBonusTax13: true,
   }));
-  const {income, baoXian, gjj, zhuanXiang, useBonusTax, oneMonthToBonus} = config;
+  const {income, baoXian, gjj, zhuanXiang, useBonusTax, useBonusTax13} = config;
   const result = useMemo(() => calcTax(config), [config]);
   const baoXianPerMonth = result.baoXian.reduce((a, b) => a + b.perMonth, 0);
   return (
@@ -50,6 +51,14 @@ export const TaxCalculator = () => {
             <Input value={income.month}
                    type={'number'}
                    onChange={e => setConfig(s => ({...s, income: {...s.income, month: Number(e.target.value)}}))}/>
+            <div>
+              十三薪:
+            </div>
+            <Input checked={income.month13}
+                   type={'checkbox'}
+                   className={'w-4 h-4 !m-1'}
+                   onChange={e => setConfig(s => ({...s, income: {...s.income, month13: e.target.checked}}))}
+            />
             <div>
               其他所得:
             </div>
@@ -114,9 +123,10 @@ export const TaxCalculator = () => {
             />
             <div>十三薪优惠计税:</div>
             <input type={'checkbox'}
-                   checked={oneMonthToBonus}
+                   checked={useBonusTax13}
                    className={'w-4 h-4 !m-1'}
-                   onChange={e => setConfig(v => ({...v, oneMonthToBonus: e.target.checked}))}
+                   disabled={!income.month13}
+                   onChange={e => setConfig(v => ({...v, useBonusTax13: e.target.checked}))}
             />
           </div>
         </div>
@@ -170,8 +180,8 @@ export const TaxCalculator = () => {
           <li>
             收入
             <ul>
-              <li>综合: {format(config.income.perMonth)} * {config.income.month} + {format(config.income.other)} = {format(result.income.salary)}</li>
-              <li>奖金: {format(config.income.bonus)}</li>
+              <li>综合: {format(result.income.salary)}</li>
+              <li>奖金: {format(result.income.bonus)}</li>
               <li>共计: {format(result.total.income)}</li>
             </ul>
           </li>
@@ -188,7 +198,7 @@ export const TaxCalculator = () => {
               <li>公积金: {format(result.gjj.base)} * {result.gjj.rate}% = {format(result.gjj.perMonth)}</li>
               <li>专项扣除: {format(zhuanXiang)}</li>
               <li>共计: {format(baoXianPerMonth + result.gjj.perMonth + zhuanXiang)}</li>
-              <li>年共计: {format(result.month * (baoXianPerMonth + result.gjj.perMonth + zhuanXiang))}</li>
+              <li>年共计: {format(baoXianPerMonth + result.gjj.perMonth + zhuanXiang)} * {result.month} = {format(result.month * (baoXianPerMonth + result.gjj.perMonth + zhuanXiang))}</li>
             </ul>
           </li>
           <li>
