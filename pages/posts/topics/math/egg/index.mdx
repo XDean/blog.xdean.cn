@@ -162,3 +162,65 @@ class Solution:
 我的解答的运行时间为76ms，对比官方答案需要184ms，相差三倍。
 
 <Image src={leetcode}/>
+
+## 后记
+
+在写完本文后，我查看了LeetCode上别人的解法。受到[这个答案](https://leetcode.cn/problems/super-egg-drop/solution/gobian-ma-jie-fa-shuang-1000ms-19mb-by-ilwwli/)的启发，才发现自己组合数学确实不好。
+
+式$(1)$其实有非常简洁的形式。
+
+我们已知组合恒等式
+
+$$
+\begin{align}
+{n \choose k} = {n-1 \choose k-1} + {n-1 \choose k}
+\end{align}
+$$
+
+这与式$(1)$非常相似。所以我们需要从中构造出一个多余的1。
+
+将式$(10)$从$k=k$向$k=1$展开，即
+
+$$
+\begin{align}
+{n \choose k} &= {n-1 \choose k-1} + {n-1 \choose k} \\
+{n \choose k-1} &= {n-1 \choose k-2} + {n-1 \choose k-1} \\
+&\vdots \\
+{n \choose 2} &= {n-1 \choose 1} + {n-1 \choose 2} \\
+{n \choose 1} &= {n-1 \choose 0} + {n-1 \choose 1}
+\end{align}
+$$
+
+我们将$k$个式子相加，右边最后一个式子的第一项${n-1 \choose 0}$正好是我们需要的$1$，而去掉这一项后，此列正好剩下$k-1$，正好满足我们的形式，即
+
+$$
+\begin{align}
+\sum_{i=1}^k {n \choose i} &= 1+ \sum_{i=1}^{k-1} {n-1 \choose i} + \sum_{i=1}^k {n-1 \choose i}
+\end{align}
+$$
+
+所以，我们得到了式$(1)$的另一个形式
+
+$$
+\begin{align}
+f(k,n) &= \sum_{i=1}^k {n \choose i}
+\end{align}
+$$
+
+```python
+import numpy as np
+from scipy.special import comb
+
+class Solution:
+    def superEggDrop(self, egg: int, floor: int) -> int:
+        if 2 ** egg > floor:
+            return int(np.ceil(np.log2(floor + 1)))
+        start = int(np.floor(np.log2(floor)))
+        for n in range(start, floor + 1):
+            if sum([comb(n, e + 1) for e in range(0,egg)]) >= floor:
+                return int(n)
+```
+
+然而，这种解法并不会比上面的多项式解法快，因为计算一次值得复杂度就已经是$O(n^3)$，而我们难以估计精确值，需要在较大的区间内搜索。
+
+在LeetCode中运行，耗时浮动在100ms~150ms。耗时比前一种解法多50%。
