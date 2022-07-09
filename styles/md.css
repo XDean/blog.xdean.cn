@@ -26,4 +26,16 @@
 
 .markdown-body .math-display {
     max-width: 90%;
+    overflow: auto;
+
+}
+
+.markdown-body .katex-display {
+    min-width: max-content;
+    margin: auto;
+    padding-right: 40px;
+}
+
+.markdown-body .katex-display .katex-html {
+    padding-right: 60px;
 }
