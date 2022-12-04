@@ -15,6 +15,8 @@ export type PostMetaInline = {
     name: string
     link: string
   }[]
+  small?: boolean
+  countWord?:boolean
 }
 
 export type TocItem = {
@@ -29,6 +31,7 @@ export type PostMeta = PostMetaInline & {
   tocData?: TocItem[]
   prevMeta?: PostMeta
   nextMeta?: PostMeta
+  totalWord: number
 }
 
 export const postMeta = (p: PostMetaInline) => p

@@ -1,27 +1,27 @@
-import {PropsWithChildren} from "react";
-import {PostMeta} from "../../domain";
-import {PostHeader} from "./PostHeader";
-import {Toc} from "./Toc";
-import clsx from "clsx";
-import {PostFooter} from "./PostFooter";
-import {PostLinks} from "./PostLinks";
-import {useRouter} from "next/router";
-import {PostPrintView} from "./PostPrintView";
-import {NextSeo} from "next-seo";
+import { PropsWithChildren } from 'react';
+import { PostMeta } from '../../domain';
+import { PostHeader } from './PostHeader';
+import { Toc } from './Toc';
+import clsx from 'clsx';
+import { PostFooter } from './PostFooter';
+import { PostLinks } from './PostLinks';
+import { useRouter } from 'next/router';
+import { PostPrintView } from './PostPrintView';
+import { NextSeo } from 'next-seo';
 
 type Props = PropsWithChildren<{
   meta: PostMeta
 }>
 
 export const PostView = (props: Props) => {
-  const {children, meta} = props
-  const image = meta.image as StaticImageData
-  const router = useRouter()
+  const {children, meta} = props;
+  const image = meta.image as StaticImageData;
+  const router = useRouter();
   if (router && router.query.print) {
-    return <PostPrintView meta={meta}>{children}</PostPrintView>
+    return <PostPrintView meta={meta}>{children}</PostPrintView>;
   }
   return (
-    <div className={'w-full max-w-screen-xl mx-auto px-4'}>
+    <div className={clsx('w-full mx-auto px-4', meta.small ? 'max-w-screen-sm' : 'max-w-screen-xl')}>
       <NextSeo
         title={meta.title}
         nofollow={true}
@@ -38,7 +38,7 @@ export const PostView = (props: Props) => {
             url: image.src,
             width: image.width,
             height: image.height,
-          }]
+          }],
         }}
       />
       {meta.tocData && (
@@ -63,5 +63,5 @@ export const PostView = (props: Props) => {
         </div>
       </article>
     </div>
-  )
-}
+  );
+};

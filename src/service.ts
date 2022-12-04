@@ -1,13 +1,13 @@
-import {slash} from 'common/util/path';
-import {JSDOM} from 'jsdom';
+import { slash } from 'common/util/path';
+import { JSDOM } from 'jsdom';
 import * as path from 'path';
 import React from 'react';
 import ReactDOM from 'react-dom/server';
-import {toArray} from '../common/util/array';
-import {walk} from '../common/util/fs';
-import {getPage} from '../common/util/page';
-import {CONSTANT} from './constants';
-import {PostMeta, PostMetaInline, TocItem} from './domain';
+import { toArray } from '../common/util/array';
+import { walk } from '../common/util/fs';
+import { getPage } from '../common/util/page';
+import { CONSTANT } from './constants';
+import { PostMeta, PostMetaInline, TocItem } from './domain';
 
 const postsDirectory = path.join(process.cwd(), 'pages/posts');
 
@@ -28,6 +28,7 @@ export async function getPostMetaByFilePath(path: string): Promise<PostMeta> {
   } as PostMeta;
   const content = ReactDOM.renderToStaticMarkup(React.createElement(module.default));
   const root = new JSDOM(content).window.document;
+  meta.totalWord = root.body.textContent?.length ?? 0;
   if (!meta.title) {
     const titleNode = root.querySelector('h1');
     if (titleNode === null) {

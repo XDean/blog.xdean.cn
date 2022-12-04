@@ -38,3 +38,8 @@
 .markdown-body .katex-display .katex-html {
     padding-right: 60px;
 }
+
+.markdown-body del {
+    text-decoration: none;
+    @apply bg-black text-black hover:text-gray-300 transition;
+}

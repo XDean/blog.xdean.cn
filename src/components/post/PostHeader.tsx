@@ -26,6 +26,11 @@ export const PostHeader = ({meta}: Props) => {
         <div>
           {format(new Date(meta.date), 'yyyy-MM-dd')}
         </div>
+        {meta.countWord && (
+          <div className={'text-gray-600 text-xs px-1'}>
+            {meta.totalWord} 字
+          </div>
+        )}
         {meta.categories.map(c => <Tag key={c} text={c}/>)}
         {meta.tags.map(c => <Tag key={c} text={c}/>)}
       </div>
