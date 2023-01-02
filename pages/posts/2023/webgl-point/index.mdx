@@ -1,0 +1,252 @@
+import {postMeta} from "src/domain";
+import Image from 'common/components/Image'
+import p1 from './images/shaders.jpg'
+import p2 from './images/gl_PointSize.jpg'
+import p3 from './images/gl_PointSize Aliasing.jpg'
+import p4 from './images/Squares.jpg'
+import p5 from './images/Black Circles.jpg'
+import p6 from './images/Smoothstep line.jpg'
+import p7 from './images/edge0.jpg'
+import p8 from './images/Grey Circles with Borders.jpg'
+import p9 from './images/Grey Circles with Anti-Aliasing.jpg'
+
+export const meta = postMeta({
+  date: '2023-01-02',
+  image: p1,
+  tags: ['Javascript', 'WebGL'],
+  categories: ['Coding'],
+})
+
+# [译] 使用 WebGL Fragment Shader 雕刻形状
+
+## 译者序
+
+我最近在做WebGL相关的图表开发，主要使用Three.js（不过本文和Three.js无关）。
+我遇到一个非常简单且典型的需求是散点图(Scatter)，但是这在GL的世界并不容易。
+散点图的点不同于普通的三维物体，其不具备透视性，即放大缩小后仍然保持原始的大小。
+如果使用Mesh，则需要在缩放的时候动态调整大小，一方面很不方便，另一方面每一个圆点都是数十个三角形，对于大规模数据有性能方面的影响。
+
+这时我注意到Three.js提供的`Points`物体，其具备了不透视的性质。
+然而同时又有了新的问题，默认的`gl.POINTS`渲染出来是一个正方形，我们的散点图需要不同形状的图例，通常是一个圆形。
+至此，我不得不学习GLSL来编写自定义的着色器。
+
+这篇文章非常适合像我一样没有GLSL基础的朋友学习，同时也推荐阅读[WebGL 理论基础](https://webglfundamentals.org/webgl/lessons/zh_cn/)。
+
+原文地址：[Sculpting Shapes with a WebGL Fragment Shader](https://blog.scottlogic.com/2019/10/17/sculpting-shapes-with-webgl-fragment-shader.html)
+
+## 正文
+
+我最近有机会帮助在WebGL中实现D3FC的一些功能。D3FC是一个扩展D3库的库，提供了常用的组件，可以更轻松地构建交互式图表。
+D3FC最初是使用SVG实现创建的。后来添加了Canvas实现，Canvas通常比SVG快一个数量级。然而，当处理超过 10,000 个点时，Canvas仍然性能堪忧。
+
+WebGL是一个提供JavaScript API的GPU加速3D框架。通过使用它来渲染 2D 图形，我们希望渲染速度比 Canvas 快几个数量级。
+在GPU上运行代码比JavaScript快得多，因此我们将尽可能多的工作在其上运行。
+
+### WebGL如何工作
+
+WebGL渲染的所有内容都是使用三角形构建的。要构建这些三角形，我们需要定义两件事——顶点的位置和三角形内各个像素（也叫作片段Fragment）的颜色。
+
+<Image src={p1}/>
+
+通过组合这些三角形可以生成复杂的3D可视化效果（例如这个[水族馆示例](https://webglsamples.org/aquarium/aquarium.html)）。
+然而，我们只需要2D视图，这消除了WebGL的很多复杂性。例如，我们不需要关心光照或纹理。
+
+我们使用vertex shader和fragment shader可以分别定义顶点和片段。
+顶点着色器用来生成每个顶点的位置，片段着色器用来确定每个片段（像素）的颜色。
+
+作为开发者，我们需要做的很简单：
+
+- 定义着色器。
+- 使用缓冲区buffers将数据和其他变量传递给GPU。
+- 将我们的着色器交给GPU。
+- 见证奇迹。
+
+听起来很容易，但我们如何在实践中做到这一切呢？
+
+编写一个WebGL组件其实非常容易，我们将系列数据转换为“三角形”，将它们加载到缓冲区中，并使用着色器渲染它们。
+为了最大化我们的性能，通常我们希望最小化三角形的数量并将尽可能多的把计算交给着色器。
+
+本博客探讨了一种方法，研究了如何使用跨缓冲区并充分利用着色器，传输最少的数据以渲染圆形点。
+
+### 画正方形
+
+由于每个形状的高度和宽度都相等，所以我们可以在片段着色器中执行大部分计算而不会造成太多浪费。
+我们的顶点着色器可以返回一个足够大的正方形来包含形状，片段着色器将丢弃其中不需要的像素。
+
+我们需要计算正方形边的长度，我们称之为`vSize`。
+因为我们知道我们希望填充的区域，所以我们可以反向计算`vSize`。例如，计算`vSize`一个圆：
+
+```glsl
+attribute float aSize; // 圆形的面积
+varying float vSize; // 外切正方形的边长
+
+vSize = 2.0 * sqrt(aSize / 3.14159); // 计算圆形的直径
+```
+
+我们通过缓冲区传入`aSize`，顶点着色器使用它来计算`vSize`。varying变量会传递给片段着色器。
+
+顶点着色器还需要定义两个变量——点大小(`gl_PointSize`)和点的坐标 (`gl_Position`)。这是WebGL内置的变量名。
+
+`gl_Position`是具有四个分量(`vec4`) 的向量。前三个分量表示点的x、y、z的坐标。
+我们将通过缓冲区传递 x 和 y 坐标。由于我们在2D空间，所以不必担心z坐标，因此我们将其设置为0。
+第四个分量是[齐次坐标](https://developer.mozilla.org/zh-CN/docs/Web/API/WebGL_API/WebGL_model_view_projection#%E9%BD%90%E6%AC%A1%E5%9D%90%E6%A0%87)，这在处理3D变换的时候很有用，但在本例中我们只需要设置为默认值`1.0`。
+
+```glsl
+attribute float aXValue;
+attribute float aYValue;
+
+gl_Position = vec4(aXValue, aYValue, 0, 1);
+```
+
+`gl_PointSize`应当是先前计算的`vSize`加上边缘添加的其他额外长度。
+我们可以通过观察横截面来得到这个额外长度，如下图。
+
+<Image src={p2}/>
+
+每一侧一半的边框在图形内，另一半在图形外。这意味着总长度为`vSize + (0.5 * uEdgeSize) + (0.5 * uEdgeSize)`, 即`vSize + uEdgeSize`。
+
+理论上我们已经结束了，但是还有一件事需要考虑。
+我们所有的计算都是连续的数值，但是像素的渲染是离散的，例如π的取值和浮点数的取整都会导致锯齿。
+
+<Image src={p3}/>
+
+如上图所示，如果图形像素正好落在最外侧（蓝色方块），原本应该渲染的边框（橘色方块）落在了`gl_PointSize`之外，它便不会被渲染。
+
+为了防止这种情况，我们在`gl_PointSize`上再加上`1.0`，以确保边框可以被渲染。
+
+```glsl
+uniform float uEdgeSize;
+
+gl_PointSize = vSize + uEdgeSize + 1.0;
+```
+
+将所有这些放在一起，我们就有了一个顶点着色器，它可以绘制正确大小的形状。
+
+<Image src={p4}/>
+
+问题也很明显，我们的圆看起来...不圆。所以让我们进入片段着色器并找到其中的玄机。
+
+### 画圆形
+
+对于正方形的每个像素，我们需要确定它是否在圆形内，如果不在，则丢弃该像素。
+这很简单，只要计算从像素到中心的距离。
+
+(译注：原文此处有关于裁剪空间的段落，其表述不完全正确，且与主要内容无关，故省去)
+
+WebGL提供了内置的[`gl_PointCoord`](https://registry.khronos.org/OpenGL-Refpages/gl4/html/gl_PointCoord.xhtml)变量，
+它是像素在点范围内的二维坐标，两个方向都是从`0.0`到`1.0`。
+因此，我们需要转换坐标为相对中心点（圆心）的坐标，即`(2.0 * gl_PointCoord) - 1.0`.
+
+接着，我们就可以丢弃与`(0, 0, 0)`的距离大于1的任何像素。要计算距离，我们可以使用[`length`](https://registry.khronos.org/OpenGL-Refpages/gl4/html/length.xhtml)，它将计算向量的长度（换句话说，点到原点的距离）。
+
+```glsl
+varying float vSize;
+
+float distance = length(2.0 * gl_PointCoord - 1.0);
+if (distance > 1.0) {
+    discard;
+}
+```
+
+<Image src={p5}/>
+
+哇哦，现在我们的圆形已经有模有样。不过，看起来有点丑，让我们再给他加上颜色和边框。
+
+### 装饰圆形
+
+更改颜色并不复杂。我们将颜色传递到缓冲区，然后在片段着色器中设置`gl_FragColor`为该颜色。
+
+```glsl
+uniform vec4 uColor;
+
+gl_FragColor = uColor;
+```
+
+相比之下，添加边框会比较复杂。
+我们需要计算我们正在检查的像素是否在边框上，如果是，则将像素着色为边框颜色。
+听起来很简单，但这里需要处理很多事情，让我们分解一下。
+
+我们创建一个名为`sEdge`的变量，它将是一个介于`0.0`和`1.0`之间的浮点数。
+当`sEdge`为`0.0`时，我们保留现有的`gl_FragColor`。
+当`sEdge`为`1.0`时，我们设置`gl_FragColor`为`uEdgeColor`，通过buffer传入的边框颜色。
+介于两者之间的任何数字都会导致两种颜色的混合。
+
+我们如何计算`sEdge`？在一维中更容易看到发生了什么。
+想象一条从圆心到边缘的线，该线的一部分将是填充颜色，一部分将是边框颜色。
+我们需要一个函数，该函数将`sEdge`在填充颜色处取值为`0.0`，在边框处取值为`1.0`，并在两者之间的过渡期间取值为一个`[0, 1]`之间的数。
+中间地带应当尽可能平滑过渡，以减少了方形像素表示弯曲边缘时可能出现的锯齿。
+
+<Image src={p6}/>
+
+幸运的是，WebGL提供了这样一个函数。`smoothstep`接受三个参数：`edge0`, `edge1`和`x`.
+
+- 如果`x`小于`edge0`，函数返回`0.0`。
+- 如果`x`大于`edge1`。函数返回`1.0`。
+- 如果`x`介于`edge0`和`edge1`之间，该函数使用[Hermite多项式](https://en.wikipedia.org/wiki/Hermite_polynomials)返回一个介于`0.0`和`1.0`之间的数字。
+
+我们就快要得到答案了，只要弄清楚`edge0`，`edge1`和`x`应该如何取值。
+
+- `edge1`是边框开始的地方，所以它是`vSize - uEdgeSize`。
+- `edge0`是边框过渡开始的地方，因此它是`edge1`减去`过渡区间`的大小（sEdge从 0.0 过渡到 1.0 的地方）。我们设置的这个数字越大，填充色和边框色之间的过渡越平滑。越小，则增加过渡的锐度，但也会增加混叠的可能性。
+
+<Image src={p7}/>
+
+根据经验，`2.0`的国度区间通常在保持清晰线条的同时去除了锯齿，因此我们设置`edge0`为`vSize - uEdgeSize - 2.0`。
+
+因为我们之前计算的`distance`是一个介于0和1之间的数字。
+所以需要乘以图形的大小来作为`x`，即`x = distance * (vSize + uEdgeSize)`。
+
+把所有的这些放在一起，我们就有了答案！
+
+```glsl
+uniform vec4 uEdgeColor;
+uniform float uEdgeSize;
+
+float sEdge = smoothstep(
+    vSize - uEdgeSize - 2.0,
+    vSize - uEdgeSize,
+    distance * (vSize + uEdgeSize)
+);
+gl_FragColor = (uEdgeColor * sEdge) + ((1.0 - sEdge) * gl_FragColor);
+```
+
+<Image src={p8}/>
+
+在结束之前，还有最后一件事要处理。
+如果你仔细观察圆圈的边缘，你会发现它们仍然是锯齿状的。所以我们的最后一步是抗锯齿。
+
+### 抗锯齿
+
+我们使用与之前类似的技术，但不是将填充色平滑到边框色中，而是将边框色平滑到背景中。出于与之前相同的原因，我们将选择过渡尺寸`2.0`。
+
+```glsl
+gl_FragColor.a = gl_FragColor.a * (1.0 - smoothstep(
+    vSize - 2.0,
+    vSize,
+    distance * vSize
+));
+```
+
+<Image src={p9}/>
+
+### 其它形状
+
+尽管我们以圆形为例，但相同的原则适用于任何形状。所有需要调整的是`distance`的计算。
+
+在其他形状的情况下，`distance`不会是实际距离，而是以图形边缘为`1.0`界的函数。例如，对于一个正方形，可以用曼哈顿距离计算：
+
+```glsl
+vec2 pointCoordTransform = 2.0 * gl_PointCoord - 1.0;
+float distance = max(abs(pointCoordTransform.x), abs(pointCoordTransform.y));
+```
+
+我们取`x`和`y`坐标的最大绝对值。这样，如果`x`或`y`坐标大于`1.0`（或小于`-1.0`），我们就知道它在正方形之外并且可以被丢弃。
+
+### 结论
+
+使用这种方法有很多优点。
+
+`GL_POINT`在绘制大量数据时效果很好。如果使用`GL_TRIANGLE_STRIP`，我们必须计算无数三角形来绘制形状。使用点点则不必考虑几何问题。
+
+此外，片段着色器中形状的程序渲染速度很快。它还可以在改变大小的同时不导致[scaling artifacts](http://www.glennchan.info/broadcast-monitors/scaling-artifacts/scaling-artifacts.htm)。
+
