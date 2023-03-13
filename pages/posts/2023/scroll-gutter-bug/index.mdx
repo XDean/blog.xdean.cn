@@ -1,0 +1,57 @@
+import { postMeta } from "src/domain";
+import logo from './logo.jpg'
+import Image from 'next/image'
+import p1 from './caniuse-overlay.png'
+import { OverlayScrollBarDemo } from '../../../../src/components/util/OverlayScrollBarDemo'
+
+export const meta = postMeta({
+  date: '2023-03-13',
+  image: logo,
+  tags: ['Frontend', 'CSS'],
+  categories: ['Coding'],
+  toc: false,
+})
+
+# Webkit滚动条bug + 滚动条样式
+
+最近碰到了一个神奇的问题，在一个`overflow:auto`的容器上点击滚轮（鼠标中键），导致整个页面卡住。
+其实说卡住也不完全，因为可以进行<kbd>TAB</kbd>切换焦点等键盘操作，说明渲染引擎并没有卡死，而是页面无法交互。
+
+经过一番Debug，终于找到了原因，下面给出一个最小复现例子。
+
+[BUG复现](/bug/scroll-gutter.html)，测试使用Chrome Version 110.0.5481.177 (Official Build) (64-bit)
+
+进入后拖动滚动条(绿色)可以正常左右滚动，但是当按下鼠标中键后整个TAB卡死。
+即使刷新页面甚至跳转到其他页面也无济于事。唯一的办法只有关闭该TAB。
+
+## BUG原因
+
+触发BUG需要同时满足
+
+- 使用`scrollbar-gutter: stable;`
+- 使用`::-webkit-scrollbar`
+- 当前只有横向滚动条，而没有纵向
+
+BUG根本原因不详，已经提交给[WebKit Bugzilla](https://bugs.webkit.org/show_bug.cgi?id=253816)
+
+## 善后
+
+之所以使用`scrollbar-gutter: stable;`，是为了让组件在改变时不因为滚动条而发生抖动。
+而`::-webkit-scrollbar`则是为了让滚动条更美观，通常是变细。
+
+我可以简单的删除`scrollbar-gutter: stable;`来解决这个bug，但是得找到新的方式来处理同样的问题。
+一种常见的方法是使用覆盖滚动条，虽然仍然不是CSS标准，但是Chrome/Edge已经支持。
+
+<div className={'max-w-[800px]'}>
+  <Image src={p1}/>
+</div>
+
+效果和代码如下
+
+- 默认状态滚动条透明，滑块半透明
+- 组件hover时滑块(thumb)显示
+- 滚动条hover时轨道(track)显示
+- 滚动条覆盖(overlay)在组件上，不会影响layout
+
+<OverlayScrollBarDemo/>
+

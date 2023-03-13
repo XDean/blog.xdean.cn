@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        main {
+            overflow: auto;
+            scrollbar-gutter: stable;
+        }
+
+        div {
+            background: linear-gradient(90deg, blue, red);
+            width: 4000px;
+            height: 100px;
+        }
+
+        main::-webkit-scrollbar {
+            width: 16px;
+            background-color: black;
+        }
+
+        main::-webkit-scrollbar-thumb {
+            background: green;
+        }
+    </style>
+    <title>Scroll Gutter Bug</title>
+</head>
+<body>
+<main>
+    <div>
+
+    </div>
+</main>
+</body>
+</html>
