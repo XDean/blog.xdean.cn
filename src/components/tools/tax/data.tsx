@@ -42,8 +42,8 @@ export const TaxMonthLevels: readonly TaxLevel[] = [
 
 export const SALARY_STATS = {
   min: 2360,
-  gdAvg: 7778,
-  szAvg: 12964,
+  gdAvg: 8807,
+  szAvg: 13730,
 } as const;
 
 
@@ -61,11 +61,11 @@ export const reference = [
     url: 'http://www.chinatax.gov.cn/chinatax/n810341/n810765/n4182981/201901/c4184017/content.html',
   },
   {
-    name: '深圳市企业职工社会保险缴费比例及缴费基数表（2022年1月起执行）',
-    url: 'http://hrss.sz.gov.cn/szsi/sbjxxgk/tzgg/simtgg/content/post_9774219.html',
+    name: '关于公布2022年全省全口径城镇单位就业人员月平均工资和2023年职工基本养老保险缴费基数上下限有关问题的通知',
+    url: 'http://hrss.sz.gov.cn/szsi/sbjxxgk/tzgg/simtgg/content/post_10699267.html',
   },
   {
-    name: '深圳市住房公积金管理中心关于做好2022年住房公积金缴存基数和缴存比例调整工作的通知',
-    url: 'http://zjj.sz.gov.cn/ztfw/zfgjj/tzgg/content/post_9908929.html',
+    name: '深圳市住房公积金管理中心关于做好2023年住房公积金缴存基数和缴存比例调整工作的通知',
+    url: 'http://zjj.sz.gov.cn/xxgk/tzgg/content/post_10689103.html',
   },
 ] as const;
