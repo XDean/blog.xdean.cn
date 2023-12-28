@@ -8,10 +8,11 @@ type Props = {
 export const WebglPoint: FC<Props> = (
   {
     shader,
-    border = 0.95
+    border = 0.95,
   },
 ) => {
   const ref = useRef<HTMLDivElement>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer>()
   const [material] = useState<THREE.ShaderMaterial>(() => new THREE.ShaderMaterial());
   useEffect(() => {
     const container = ref.current;
@@ -34,6 +35,7 @@ export const WebglPoint: FC<Props> = (
     scene.add(points);
 
     const renderer = new THREE.WebGLRenderer();
+    rendererRef.current = renderer;
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(300, 300);
 
@@ -51,6 +53,7 @@ export const WebglPoint: FC<Props> = (
     }
 
     return () => {
+      rendererRef.current = undefined;
       material.dispose();
       renderer.dispose();
       renderer.dispose();
@@ -60,8 +63,8 @@ export const WebglPoint: FC<Props> = (
 
   useEffect(() => {
     material.fragmentShader = `
+  #define PI 3.1415926
     ${shader}
-
   void main() {
     vec2 p = 2.0 * gl_PointCoord.xy - 1.0;
     p.y = -p.y;
