@@ -1,0 +1,82 @@
+import { postMeta } from "src/domain";
+import { WebglPoint } from '../../../../components/weblgl/Point';
+import p1 from './images/shaders.jpg'
+import "mafs/core.css";
+import { Mafs, Coordinates, Circle, Polygon } from "mafs"
+
+export const meta = postMeta({
+  date: '2023-08-15',
+  image: p1,
+  tags: ['Javascript', 'WebGL'],
+  categories: ['Coding'],
+})
+
+# 使用shader绘制WebGL Scatter各种图形
+
+在[上次翻译的文章中](./webgl-point)中，我们成功的使用`gl.POINTS`渲染出了一个顺滑的圆形。
+
+然而很快新的需求就出现了，一个散点图上显然不能只有圆形，一般散点图都会提供多种图形选择以区分不同的数据系列。
+对于圆形，我们只需要简单的判断像素到圆心的距离，对于其他图形则并没有这么简单。
+
+<WebglPoint
+  shader={`float dist(vec2 p) {return length(p);}`}
+/>
+
+## 三角形
+
+首先我们想到的是最简单的三角形，我们需要在正方形的剪裁空间内绘制出一个正三角形。
+为了让三角形重心落在原点处，我同时绘制了正方形的内接圆，内接圆的内接正三角形即为我们想要的结果。
+
+<Mafs viewBox={{y: [-1, 1]}}
+      height={300}
+      zoom
+>
+  <Coordinates.Cartesian/>
+  <Circle
+    center={[0, 0]}
+    radius={1}
+    strokeStyle={'dashed'}
+  />
+  <Polygon
+    points={[[1, 1], [1, -1], [-1, -1], [-1, 1]]}
+    strokeStyle="dashed"
+  />
+  <Polygon
+    points={[[0, 1], [Math.sqrt(3) / 2, -0.5], [-Math.sqrt(3) / 2, -0.5]]}
+  />
+</Mafs>
+
+一种最为简单朴素的想法是，需要判断每一个像素是否落在三角形内。
+我最初也是这么想的，所以很快开始寻找算法，最后使用了[半平面法](https://stackoverflow.com/questions/2049582/how-to-determine-if-a-point-is-in-a-2d-triangle)。
+
+```glsl
+float r3 = 1.732051; // root of 3
+bool inTriangle(vec2 p) {
+    float offset = 2.0 / r3 - 1.0;
+    vec2 p0 = vec2(-r3 / 2.0, -0.5);
+    vec2 p1 = vec2(r3 / 2.0, -0.5);
+    vec2 p2 = vec2(0, 1.0);
+    float area = 0.5 * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y);
+    float s = (p0.y * p2.x - p0.x * p2.y + (p2.y - p0.y) * p.x + (p0.x - p2.x) * p.y) / 2.0 / area;
+    float t = (p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y) / 2.0 / area;
+    return s > 0.0 && t > 0.0 && s + t < 1.0;
+}
+```
+
+<WebglPoint
+  shader={`
+  float dist(vec2 p) {
+    float r3 = 1.732051;
+    float offset = 2.0 / r3 - 1.0;
+    vec2 p0 = vec2(-r3 / 2.0, -0.5);
+    vec2 p1 = vec2(r3 / 2.0, -0.5);
+    vec2 p2 = vec2(0, 1.0);
+    float area = 0.5 * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y);
+    float s = (p0.y * p2.x - p0.x * p2.y + (p2.y - p0.y) * p.x + (p0.x - p2.x) * p.y) / 2.0 / area;
+    float t = (p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y) / 2.0 / area;
+    return max(max(1.0 - s, 1.0 - t), s + t);
+  }
+`}
+/>
+
+很显然这段代码并不好懂，我们需要
