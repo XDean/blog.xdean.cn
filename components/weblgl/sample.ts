@@ -1,5 +1,5 @@
 export const Sample = {
-  circle: `float dist(vec2 p) {return length(p);}`,
+  circle: `float dist(vec2 p) {return length(p);}\n#include <default_main>`,
   triangleNaive: `\
 float dist(vec2 p) {
   float r3 = 1.732051;
@@ -12,8 +12,12 @@ float dist(vec2 p) {
   float t = (p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y) / 2.0 / area;
   return max(max(1.0 - s, 1.0 - t), s + t);
 }
+
+#include <default_main>
 `,
   triangle: `\
+#define PI 3.1415926
+
 float dist(vec2 p) {
   float n = 3.0; // change it!
   float outCorner = PI * 2.0 / n;
@@ -25,8 +29,12 @@ float dist(vec2 p) {
   float radius = (len * cos(theta)) + (vLine / tan(innerCorner / 2.0));
   return radius;
 }
+
+#include <default_main>
 `,
   rotate: `\
+#define PI 3.1415926
+
 vec2 rotate(vec2 p, float rad) {
   float r = length(p);
   float angle = atan(p.y, p.x) + rad;
@@ -46,8 +54,12 @@ float dist(vec2 p) {
   float radius = (len * cos(theta)) + (vLine / tan(innerCorner / 2.0));
   return radius;
 }
+
+#include <default_main>
 `,
   star:`
+#define PI 3.1415926
+
 vec2 rotate(vec2 p, float rad) {
   float r = length(p);
   float angle = atan(p.y, p.x) + rad;
@@ -67,5 +79,7 @@ float dist(vec2 p) {
   float radius = len * cos(theta) + vLine / tan(PI / 10.0);
   return radius;
 }
+
+#include <default_main>
 `
 };

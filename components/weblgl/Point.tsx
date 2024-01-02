@@ -8,11 +8,10 @@ type Props = {
 export const WebglPoint: FC<Props> = (
   {
     shader,
-    border = 0.95,
   },
 ) => {
   const ref = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer>()
+  const rendererRef = useRef<THREE.WebGLRenderer>();
   const [material] = useState<THREE.ShaderMaterial>(() => new THREE.ShaderMaterial());
   useEffect(() => {
     const container = ref.current;
@@ -62,33 +61,27 @@ export const WebglPoint: FC<Props> = (
   }, []);
 
   useEffect(() => {
-    material.fragmentShader = `
-  #define PI 3.1415926
-    ${shader}
-  void main() {
-    vec2 p = 2.0 * gl_PointCoord.xy - 1.0;
-    p.y = -p.y;
-    float distance = dist(p) / 0.9;
-    if (distance > 1.0) {
-      discard;
-    }
-    float padToBoard = smoothstep(
-      ${(border - 0.05).toFixed(2)},
-      ${border.toFixed(2)},
-      distance
-    );
-    gl_FragColor =
-    (padToBoard * vec4(1.0, 1.0, 0.0, 1.0)) +
-    ((1.0 - padToBoard) * vec4(0.0, 0.5, 1.0, 1.0));
-
-    gl_FragColor.a = gl_FragColor.a * (1.0 - smoothstep(
-      0.98,
-      1.0,
-      distance
-    ));
-  }`;
+    material.fragmentShader = shader.replace(`#include <default_main>`, `
+void main() {
+  vec2 p = 2.0 * gl_PointCoord.xy - 1.0;
+  p.y = -p.y;
+  float distance = dist(p) / 0.9;
+  if (distance > 1.0) {
+    discard;
+  }
+  float boardFactor = smoothstep(0.85, 0.9, distance);
+  gl_FragColor =
+    (boardFactor * vec4(1.0, 1.0, 0.0, 1.0)) +
+    ((1.0 - boardFactor) * vec4(0.0, 0.5, 1.0, 1.0));
+    
+  gl_FragColor.a = gl_FragColor.a * (1.0 - smoothstep(
+    0.98,
+    1.0,
+    distance
+  ));
+}`);
     material.needsUpdate = true;
-  }, [shader, border]);
+  }, [shader]);
   return (
     <div className={''}>
       <div

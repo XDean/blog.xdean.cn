@@ -21,6 +21,11 @@ export const meta = postMeta({
 然而很快新的需求就出现了，一个散点图上显然不能只有圆形，一般散点图都会提供多种图形选择以区分不同的数据系列。
 对于圆形，我们只需要简单的判断像素到圆心的距离，对于其他图形则并没有这么简单。
 
+- 后文图形均为webgl渲染
+- 默认`#include <default_main>`实现有如下行为，你可以删除后自己定义`void main()`
+  - 为保证在视口内可见，`dist`函数返回值会被`/0.9`
+  - 默认会渲染10%的边框，即返回值`0.9~1.0`视为边框
+
 <WebglPoint shader={Sample.circle}/>
 
 ## 三角形
@@ -57,8 +62,10 @@ export const meta = postMeta({
 <EditablePoint defaultShader={Sample.triangleNaive}/>
 
 效果如上，倒确实是画出了一个三角形。
-但是很显然这段代码并不好懂，我们需要从半平面逐步推导到最后的代码。
-同时这个代码也难以拓展，如果要画五边形，又是一长串复杂的代码。
+
+- 但是很显然这段代码并不好懂，我们需要从半平面逐步推导到最后的代码。
+- 同时这个代码也难以拓展，如果要画五边形，又是一长串复杂的代码。
+- 边框不符合我们预期的10%
 
 ## 正多边形通解
 
@@ -110,5 +117,4 @@ $$
 
 你可以使用上面的可编辑面板进行尝试，注意打开console查看shader错误信息。
 
-<WebglPoint shader={Sample.star}
-            border={0.8}/>
+<WebglPoint shader={Sample.star}/>
