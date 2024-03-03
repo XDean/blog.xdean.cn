@@ -1,0 +1,120 @@
+import { postMeta } from "src/domain";
+import { EditablePoint } from '../../../../components/weblgl/EditablePoint';
+import { WebglPoint } from '../../../../components/weblgl/Point';
+import { PolygonSample } from '../../../../components/weblgl/PolygonSample';
+import { Sample } from '../../../../components/weblgl/sample';
+import p1 from './images/star.png'
+import "mafs/core.css";
+import { Mafs, Coordinates, Circle, Polygon, Point, Line, useMovablePoint } from "mafs"
+
+export const meta = postMeta({
+  date: '2023-12-25',
+  image: p1,
+  tags: ['Javascript', 'WebGL', 'Plot'],
+  categories: ['Coding'],
+})
+
+# 使用shader绘制WebGL Scatter各种图形
+
+在[上次翻译的文章中](./webgl-point)中，我们成功的使用`gl.POINTS`渲染出了一个顺滑的圆形。
+
+然而很快新的需求就出现了，一个散点图上显然不能只有圆形，一般散点图都会提供多种图形选择以区分不同的数据系列。
+对于圆形，我们只需要简单的判断像素到圆心的距离，对于其他图形则并没有这么简单。
+
+- 后文图形均为webgl渲染
+- 默认`#include <default_main>`实现有如下行为，你可以删除后自己定义`void main()`
+  - 为保证在视口内可见，`dist`函数返回值会被`/0.9`
+  - 默认会渲染10%的边框，即返回值`0.9~1.0`视为边框
+
+<WebglPoint shader={Sample.circle}/>
+
+## 三角形
+
+首先我们想到的是最简单的三角形，我们需要在正方形的剪裁空间内绘制出一个正三角形。
+为了让三角形重心落在原点处，我同时绘制了正方形的内接圆，内接圆的内接正三角形即为我们想要的结果。
+
+<Mafs
+  viewBox={{y: [-1, 1]}}
+  width={500}
+  height={300}
+  pan={false}
+>
+  <Coordinates.Cartesian/>
+  <Circle
+    center={[0, 0]}
+    radius={1}
+    strokeStyle={'dashed'}
+  />
+  <Polygon
+    points={[[1, 1], [1, -1], [-1, -1], [-1, 1]]}
+    strokeStyle="dashed"
+  />
+  <Polygon
+    points={[[0, 1], [Math.sqrt(3) / 2, -0.5], [-Math.sqrt(3) / 2, -0.5]]}
+  />
+</Mafs>
+
+<br/>
+
+一种最为简单朴素的想法是，需要判断每一个像素是否落在三角形内。
+我最初也是这么想的，所以很快开始寻找算法，最后使用了[半平面法](https://stackoverflow.com/questions/2049582/how-to-determine-if-a-point-is-in-a-2d-triangle)。
+
+<EditablePoint defaultShader={Sample.triangleNaive}/>
+
+效果如上，倒确实是画出了一个三角形。
+
+- 但是很显然这段代码并不好懂，我们需要从半平面逐步推导到最后的代码。
+- 同时这个代码也难以拓展，如果要画五边形，又是一长串复杂的代码。
+- 边框不符合我们预期的10%
+
+## 正多边形通解
+
+我花费了一些时间，终于发现了另一种理解方式。
+由于我们只考虑正三角形，所以并不需要求点是否在三角形内，而是求该点所处的正三角形的外接圆半径。
+
+- 让我们想象这个一个正三角形从远点开始变大，他会扫过空间中的所有的点。
+- 所以，对于每一个点，都属于某一个半径下的三角形
+- 有了对应的半径，我们除了知道哪些点在图形内(即`fragRadius < pointRadius`)，还能自然的得到边框(即`|fragRadius - pointRadius| < borderSize / 2`)
+
+通过这一思路，我们很快就可以把问题进行转化，如下。
+
+<PolygonSample/>
+
+- 已知
+  - $P=(x,y)$
+  - $\angle PRO = 30 \degree$ (正三角形内角的一半)
+- 求$|OR|$
+
+我们做辅助线$PS$，通过三角函数可以很快的得到答案
+
+$$
+\begin{aligned}
+|OR| &= |OS| + |SR| \\
+&= x + \frac y {tan(30 \degree)}
+\end{aligned}
+$$
+
+这个形式可以很快的推广到正N边形。
+下面是一个可以编辑的例子，你可以修改`n`的值来绘制四边形、五边形等等。
+这一代码比上面的推导略微复杂，因为我们要把所有点都转换到第一象限。
+
+<EditablePoint defaultShader={Sample.triangle}/>
+
+## 旋转
+
+现在我们已经可以绘制正多边形了，为了使我们的symbol符号更丰富，可以再加上旋转的功能。
+这样就可以拥有上下左右四个方向的三角形了。
+
+旋转非常简单，只需要再原坐标上进行初等三角函数变换即可。
+
+<EditablePoint defaultShader={Sample.rotate}/>
+
+## 五角星
+
+至此，我们已经掌握了绘制点的形状的主要思路。
+接下来的就可以随心所欲的玩耍了。
+让我们首先来绘制一个五角星吧。
+
+你可以使用上面的可编辑面板进行尝试，注意打开console查看shader错误信息。
+
+<WebglPoint shader={Sample.star}/>
